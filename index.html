@@ -1653,16 +1653,37 @@
       const pct = key => Number.isFinite(value(key)) ? `${value(key).toFixed(2)}%` : "n/a";
       const num = (key, decimals = 2) => Number.isFinite(value(key)) ? value(key).toFixed(decimals) : "n/a";
       if (name === "30Y nominal yield") return pct("dgs30");
+      if (name === "30Y yield proxy range") return ohlcSummary(latest, "tyx", "%", 2);
       if (name === "30Y real yield") return pct("dfii30");
       if (name === "10Y breakevens") return pct("t10yie");
       if (name === "10s30s curve") return Number.isFinite(value("curve_10s30s")) ? `${Math.round(value("curve_10s30s") * 100)} bp` : "n/a";
       if (name === "MOVE volatility") return num("move", 1);
       if (name === "VIX volatility") return num("vix", 1);
       if (name === "High yield OAS") return pct("hy_oas");
+      if (name === "30Y futures") return ohlcSummary(latest, "zb_f", "", 2);
+      if (name === "TLT ETF") return ohlcSummary(latest, "tlt", "$", 2);
       if (name === "DXY dollar index") return num("dxy", 2);
       if (name === "Gold futures") return Number.isFinite(value("gold")) ? `$${value("gold").toFixed(0)}` : "n/a";
       if (name === "WTI crude oil") return Number.isFinite(value("oil")) ? `$${value("oil").toFixed(0)}` : "n/a";
       return "n/a";
+    }
+
+    function formatPrice(value, prefix = "", suffix = "", decimals = 2) {
+      const parsed = Number(value);
+      if (!Number.isFinite(parsed)) return "n/a";
+      return `${prefix}${parsed.toFixed(decimals)}${suffix}`;
+    }
+
+    function ohlcSummary(row, prefix, unit = "", decimals = 2) {
+      const high = Number(row?.[`${prefix}_high`]);
+      const low = Number(row?.[`${prefix}_low`]);
+      const close = Number(row?.[`${prefix}_close`]);
+      if (![high, low, close].every(Number.isFinite)) return "n/a";
+      const pricePrefix = unit === "$" ? "$" : "";
+      const priceSuffix = unit === "%" ? "%" : "";
+      const sourceDate = row?.[`${prefix}_source_date`];
+      const sourceNote = sourceDate && sourceDate !== row?.date ? ` (${sourceDate})` : "";
+      return `${formatPrice(low, pricePrefix, priceSuffix, decimals)}-${formatPrice(high, pricePrefix, priceSuffix, decimals)}; close ${formatPrice(close, pricePrefix, priceSuffix, decimals)}${sourceNote}`;
     }
 
     function thresholdFlag(name, latest) {
@@ -1678,6 +1699,20 @@
         if (yld >= 4.95) return flag("watch", "Near resistance", "Within 5 bp of the 5.00% upside threshold.");
         if (yld <= 4.65) return flag("watch", "Near support", "Within 5 bp of the 4.60% downside threshold.");
         return flag("ok", "Inside range", "Still between the dashboard's 4.60%-5.00% range markers.");
+      }
+
+      if (name === "30Y yield proxy range") {
+        const high = value("tyx_high");
+        const low = value("tyx_low");
+        const close = value("tyx_close");
+        const official = value("dgs30");
+        if (![high, low, close].every(Number.isFinite)) return flag("gap", "Proxy gap", "Yahoo/CBOE ^TYX OHLC proxy is unavailable.");
+        const spread = Number.isFinite(official) ? Math.abs(close - official) * 100 : null;
+        const sourceDate = latest.tyx_source_date && latest.tyx_source_date !== latest.date ? ` Source bar ${latest.tyx_source_date}.` : "";
+        if (Number.isFinite(spread) && spread > 20) return flag("watch", "Proxy check", `^TYX close differs from FRED 30Y by ${spread.toFixed(0)} bp; use FRED as official close.${sourceDate}`);
+        if (high >= 5) return flag("pain", "Intraday break", `^TYX proxy traded at or above 5.00%; watch for confirmation in official close.${sourceDate}`);
+        if (low <= 4.6) return flag("watch", "Support test", `^TYX proxy traded near/below 4.60%; range support is being tested.${sourceDate}`);
+        return flag("ok", "Proxy aligned", `^TYX OHLC proxy is consistent with the official FRED close.${sourceDate}`);
       }
 
       if (name === "30Y real yield") {
@@ -1730,6 +1765,20 @@
         return flag("ok", "Contained", "High-yield spreads remain below the watch line.");
       }
 
+      if (name === "30Y futures") {
+        const high = value("zb_f_high");
+        const low = value("zb_f_low");
+        if (![high, low].every(Number.isFinite)) return flag("gap", "Futures gap", "30Y Treasury bond futures OHLC is unavailable.");
+        return flag("watch", "Price proxy", "Bond futures move inversely to yield; use this as confirmation, not a yield replacement.");
+      }
+
+      if (name === "TLT ETF") {
+        const high = value("tlt_high");
+        const low = value("tlt_low");
+        if (![high, low].every(Number.isFinite)) return flag("gap", "ETF gap", "TLT OHLC is unavailable.");
+        return flag("watch", "Duration proxy", "TLT captures long-duration price action and may diverge from cash yield levels.");
+      }
+
       if (name === "WTI crude oil") {
         const oil = value("oil");
         if (!Number.isFinite(oil)) return flag("gap", "Data gap", "WTI crude is unavailable.");
@@ -1765,12 +1814,15 @@
       const prior = rows[rows.length - 2];
       return [
         ["30Y nominal yield", bpChange(Number(latest.dgs30), Number(prior.dgs30))],
+        ["30Y yield proxy range", bpChange(Number(latest.tyx_close), Number(prior.tyx_close))],
         ["30Y real yield", bpChange(Number(latest.dfii30), Number(prior.dfii30))],
         ["10Y breakevens", bpChange(Number(latest.t10yie), Number(prior.t10yie))],
         ["10s30s curve", bpChange(Number(latest.curve_10s30s), Number(prior.curve_10s30s))],
         ["MOVE volatility", valueChange(Number(latest.move), Number(prior.move))],
         ["VIX volatility", valueChange(Number(latest.vix), Number(prior.vix))],
         ["High yield OAS", bpChange(Number(latest.hy_oas), Number(prior.hy_oas))],
+        ["30Y futures", pctChange(Number(latest.zb_f_close), Number(prior.zb_f_close))],
+        ["TLT ETF", pctChange(Number(latest.tlt_close), Number(prior.tlt_close))],
         ["DXY dollar index", pctChange(Number(latest.dxy), Number(prior.dxy))],
         ["Gold futures", pctChange(Number(latest.gold), Number(prior.gold))],
         ["WTI crude oil", valueChange(Number(latest.oil), Number(prior.oil), "")]
@@ -2624,6 +2676,7 @@
       const priorFive = rows.slice(-6, -1);
       const items = [
         { label: "30Y yield", key: "dgs30", kind: "yield", higher: "higher", keyLevel: "5.00%", threshold: 5.00, direction: "above", nearPct: 0.025 },
+        { label: "30Y proxy", key: "tyx_close", kind: "yield", higher: "higher", keyLevel: "5.00%", threshold: 5.00, direction: "above", nearPct: 0.025 },
         { label: "10s30s curve", key: "curve_10s30s", kind: "bp", higher: "higher", keyLevel: "+25 bp", threshold: 0.25, direction: "above", nearPct: 0.20 },
         { label: "Breakevens", key: "t10yie", kind: "yield", higher: "higher", keyLevel: "2.35%", threshold: 2.35, direction: "above", nearPct: 0.035 },
         { label: "MOVE", key: "move", kind: "index", higher: "lower", keyLevel: "120", threshold: 120, direction: "above", nearPct: 0.10 },
