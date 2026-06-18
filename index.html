@@ -225,10 +225,11 @@
     .grid {
       display: grid;
       gap: 14px;
+      min-width: 0;
     }
 
     .overview-grid {
-      grid-template-columns: minmax(300px, 1.15fr) repeat(3, minmax(180px, 0.7fr));
+      grid-template-columns: minmax(280px, 1.15fr) repeat(3, minmax(170px, 0.7fr));
       align-items: stretch;
     }
 
@@ -325,7 +326,7 @@
 
     .content-grid {
       margin-top: 14px;
-      grid-template-columns: minmax(520px, 1.6fr) minmax(320px, 0.9fr);
+      grid-template-columns: minmax(0, 1.6fr) minmax(310px, 0.9fr);
       align-items: start;
     }
 
@@ -413,6 +414,7 @@
 
     .chart-wrap {
       padding: 14px 16px 16px;
+      min-width: 0;
     }
 
     canvas {
@@ -428,7 +430,7 @@
 
     .factor-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(160px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr));
       gap: 10px;
       padding: 14px;
     }
@@ -528,15 +530,28 @@
       display: grid;
       gap: 10px;
       padding: 14px;
+      min-width: 0;
+    }
+
+    .scenario-panel {
+      min-height: 440px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .scenario-panel .scenario-list {
+      flex: 1;
+      align-content: stretch;
     }
 
     .scenario {
       border: 1px solid var(--line);
       border-radius: 8px;
-      padding: 13px;
+      padding: 12px;
       display: grid;
-      gap: 11px;
+      gap: 9px;
       background: #fbfcfb;
+      min-width: 0;
     }
 
     .scenario-row {
@@ -548,11 +563,13 @@
 
     .scenario-name {
       font-weight: 730;
+      overflow-wrap: anywhere;
     }
 
     .prob {
-      font-size: 24px;
+      font-size: 22px;
       font-weight: 760;
+      white-space: nowrap;
     }
 
     .scenario small, .table-note {
@@ -722,9 +739,9 @@
       padding: 12px 14px 14px;
     }
 
-    .catalyst-item {
+    .catalyst-row {
       display: grid;
-      grid-template-columns: 24px minmax(110px, 1fr) auto;
+      grid-template-columns: minmax(92px, 1fr) minmax(72px, 0.8fr) minmax(64px, 0.65fr) minmax(72px, 0.7fr);
       gap: 9px;
       align-items: center;
       border-bottom: 1px solid var(--line);
@@ -733,9 +750,18 @@
       min-width: 0;
     }
 
-    .catalyst-item:last-child {
+    .catalyst-row:last-child {
       border-bottom: 0;
       padding-bottom: 0;
+    }
+
+    .catalyst-row.header {
+      color: var(--muted);
+      font-size: 10.5px;
+      font-weight: 760;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding-bottom: 7px;
     }
 
     .arrow {
@@ -763,6 +789,29 @@
       color: var(--muted);
       text-align: right;
       white-space: nowrap;
+    }
+
+    .catalyst-level,
+    .catalyst-last,
+    .catalyst-change {
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .catalyst-level {
+      color: var(--muted);
+    }
+
+    .catalyst-last {
+      font-weight: 720;
+    }
+
+    .catalyst-change {
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
+      min-width: 0;
     }
 
     .workflow-item {
@@ -971,7 +1020,7 @@
 
     a { color: var(--blue); }
 
-    @media (max-width: 1100px) {
+    @media (max-width: 1250px) {
       .app { grid-template-columns: 1fr; }
       aside {
         position: static;
@@ -982,6 +1031,12 @@
       }
       .overview-grid, .content-grid, .two-col, .review-grid {
         grid-template-columns: 1fr;
+      }
+      .scenario-panel {
+        min-height: auto;
+      }
+      .scenario-list {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
       }
       .factor-grid {
         grid-template-columns: repeat(2, minmax(160px, 1fr));
@@ -1015,6 +1070,26 @@
       .driver {
         grid-template-columns: 1fr;
         align-items: start;
+      }
+      .scenario-list {
+        grid-template-columns: 1fr;
+      }
+      .catalyst-row {
+        grid-template-columns: minmax(110px, 1fr) minmax(82px, auto);
+      }
+      .catalyst-row.header {
+        display: none;
+      }
+      .catalyst-level {
+        display: none;
+      }
+      .catalyst-last {
+        text-align: left;
+        color: var(--muted);
+        font-weight: 600;
+      }
+      .catalyst-change {
+        justify-content: flex-end;
       }
       .driver .driver-value {
         text-align: left;
@@ -1158,7 +1233,7 @@
           </div>
 
           <div class="right-column">
-            <section class="panel">
+            <section class="panel scenario-panel">
               <div class="panel-header">
                 <p class="panel-title">Scenario Scorecard</p>
                 <div class="panel-actions">
@@ -2436,17 +2511,25 @@
       const latest = rows[rows.length - 1];
       const priorFive = rows.slice(-6, -1);
       const items = [
-        { label: "30Y yield", key: "dgs30", kind: "yield", higher: "higher" },
-        { label: "10s30s curve", key: "curve_10s30s", kind: "bp", higher: "higher" },
-        { label: "Breakevens", key: "t10yie", kind: "yield", higher: "higher" },
-        { label: "MOVE", key: "move", kind: "index", higher: "lower" },
-        { label: "HY OAS", key: "hy_oas", kind: "spread", higher: "lower" },
-        { label: "DXY", key: "dxy", kind: "index", higher: "mixed" },
-        { label: "Gold", key: "gold", kind: "usd", higher: "mixed" },
-        { label: "VIX", key: "vix", kind: "index", higher: "lower" },
-        { label: "WTI crude", key: "oil", kind: "usd", higher: "higher" }
+        { label: "30Y yield", key: "dgs30", kind: "yield", higher: "higher", keyLevel: "5.00%" },
+        { label: "10s30s curve", key: "curve_10s30s", kind: "bp", higher: "higher", keyLevel: "+25 bp" },
+        { label: "Breakevens", key: "t10yie", kind: "yield", higher: "higher", keyLevel: "2.35%" },
+        { label: "MOVE", key: "move", kind: "index", higher: "lower", keyLevel: "120" },
+        { label: "HY OAS", key: "hy_oas", kind: "spread", higher: "lower", keyLevel: "4.50%" },
+        { label: "DXY", key: "dxy", kind: "index", higher: "mixed", keyLevel: "Watch" },
+        { label: "Gold", key: "gold", kind: "usd", higher: "mixed", keyLevel: "Watch" },
+        { label: "VIX", key: "vix", kind: "index", higher: "lower", keyLevel: "25" },
+        { label: "WTI crude", key: "oil", kind: "usd", higher: "higher", keyLevel: "$90" }
       ];
-      host.innerHTML = items.map(item => {
+      const header = `
+        <div class="catalyst-row header" aria-hidden="true">
+          <span>Catalyst</span>
+          <span class="catalyst-level">Key level</span>
+          <span class="catalyst-last">Last</span>
+          <span class="catalyst-change">Change</span>
+        </div>
+      `;
+      host.innerHTML = header + items.map(item => {
         const latestValue = Number(latest[item.key]);
         const avgValue = average(priorFive.map(row => row[item.key]));
         const delta = Number.isFinite(latestValue) && Number.isFinite(avgValue) ? latestValue - avgValue : null;
@@ -2462,10 +2545,11 @@
             : (direction === "up" ? "lower-yield pressure" : "higher-yield pressure");
         const deltaText = delta == null ? "n/a" : `${delta > 0 ? "+" : ""}${formatCatalystValue(delta, item.kind)}`;
         return `
-          <div class="catalyst-item" title="${escapeHtml(`Latest ${formatCatalystValue(latestValue, item.kind)} versus prior 5-period average ${formatCatalystValue(avgValue, item.kind)}; ${pressure}.`)}">
-            <span class="arrow ${direction}">${arrow}</span>
+          <div class="catalyst-row" title="${escapeHtml(`Latest ${formatCatalystValue(latestValue, item.kind)} versus prior 5-period average ${formatCatalystValue(avgValue, item.kind)}; ${pressure}.`)}">
             <span class="catalyst-name">${item.label}</span>
-            <span class="catalyst-meta">${deltaText}</span>
+            <span class="catalyst-level">${item.keyLevel}</span>
+            <span class="catalyst-last">${formatCatalystValue(latestValue, item.kind)}</span>
+            <span class="catalyst-change"><span class="arrow ${direction}">${arrow}</span><span class="catalyst-meta">${deltaText}</span></span>
           </div>
         `;
       }).join("");
