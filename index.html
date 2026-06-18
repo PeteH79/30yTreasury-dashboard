@@ -1,0 +1,2947 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>30-Year Yield Path Dashboard</title>
+  <style>
+    :root {
+      --bg: #f4f6f5;
+      --panel: #ffffff;
+      --panel-2: #eef3f0;
+      --ink: #1a2521;
+      --muted: #66736d;
+      --line: #d8dfdb;
+      --green: #009e73;
+      --green-soft: #dcefe7;
+      --amber: #b66d00;
+      --amber-soft: #f6ead8;
+      --red: #d55e00;
+      --red-soft: #f4dfdc;
+      --blue: #0072b2;
+      --blue-soft: #ddeaf2;
+      --violet: #cc79a7;
+      --shadow: 0 18px 45px rgba(31, 45, 40, 0.08);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      min-width: 320px;
+      overflow-x: hidden;
+    }
+
+    button, input, select, textarea {
+      font: inherit;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      min-width: 0;
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+
+    aside {
+      background: #17231f;
+      color: #f5faf7;
+      padding: 22px 18px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+      min-width: 0;
+    }
+
+    .brand {
+      margin-bottom: 28px;
+    }
+
+    .brand h1 {
+      margin: 0 0 8px;
+      font-size: 22px;
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    .brand p {
+      margin: 0;
+      color: #b8c7c0;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    nav {
+      display: grid;
+      gap: 8px;
+    }
+
+    .nav-btn {
+      border: 1px solid transparent;
+      background: transparent;
+      color: #d9e7e1;
+      text-align: left;
+      padding: 10px 11px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 40px;
+    }
+
+    .nav-btn svg {
+      width: 18px;
+      height: 18px;
+      flex: 0 0 auto;
+    }
+
+    .nav-btn.active {
+      background: #eef3f0;
+      color: #16231f;
+    }
+
+    .sidebar-block {
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
+      margin-top: 22px;
+      padding-top: 18px;
+    }
+
+    .sidebar-label {
+      margin: 0 0 8px;
+      color: #91a49a;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .mini-source {
+      font-size: 12px;
+      color: #c8d8d1;
+      line-height: 1.45;
+    }
+
+    .mini-source a {
+      color: #eaf5ef;
+    }
+
+    main {
+      padding: 22px;
+      max-width: 1500px;
+      width: 100%;
+      margin: 0 auto;
+      min-width: 0;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .eyebrow {
+      margin: 0 0 6px;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 30px;
+      line-height: 1.1;
+      letter-spacing: 0;
+    }
+
+    .asof {
+      text-align: right;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .icon-btn, .seg-btn {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--ink);
+      border-radius: 8px;
+      min-height: 36px;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(31, 45, 40, 0.04);
+    }
+
+    .icon-btn {
+      width: 38px;
+      display: inline-grid;
+      place-items: center;
+      padding: 0;
+    }
+
+    .icon-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .segmented {
+      display: inline-flex;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .seg-btn {
+      border: 0;
+      border-radius: 0;
+      padding: 0 12px;
+      box-shadow: none;
+      min-width: 58px;
+      background: transparent;
+      color: var(--muted);
+    }
+
+    .seg-btn.active {
+      background: #17231f;
+      color: #fff;
+    }
+
+    .grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .overview-grid {
+      grid-template-columns: minmax(300px, 1.15fr) repeat(3, minmax(180px, 0.7fr));
+      align-items: stretch;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      min-width: 0;
+    }
+
+    .panel.pad {
+      padding: 16px;
+    }
+
+    .outlook {
+      display: grid;
+      gap: 14px;
+    }
+
+    .outlook-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: flex-start;
+    }
+
+    .status-pill, .tag, .impact {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      border-radius: 999px;
+      padding: 5px 9px;
+      font-size: 12px;
+      font-weight: 650;
+      white-space: nowrap;
+      max-width: 100%;
+    }
+
+    .status-pill.range { background: var(--amber-soft); color: #714200; }
+    .status-pill.up { background: var(--red-soft); color: var(--red); }
+    .status-pill.down { background: var(--green-soft); color: var(--green); }
+    .tag { background: var(--panel-2); color: #394942; }
+    .tag.blue { background: var(--blue-soft); color: var(--blue); }
+    .tag.green { background: var(--green-soft); color: var(--green); }
+    .tag.amber { background: var(--amber-soft); color: var(--amber); }
+    .tag.red { background: var(--red-soft); color: var(--red); }
+    .tag.ok { background: var(--green-soft); color: var(--green); }
+    .tag.watch { background: var(--amber-soft); color: var(--amber); }
+    .tag.pain { background: var(--red-soft); color: var(--red); }
+    .tag.gap { background: var(--blue-soft); color: var(--blue); }
+
+    .big-rate {
+      font-size: clamp(42px, 7vw, 72px);
+      line-height: 0.94;
+      font-weight: 760;
+      letter-spacing: 0;
+    }
+
+    .outlook-copy {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.45;
+      max-width: 66ch;
+    }
+
+    .kpi {
+      display: grid;
+      gap: 11px;
+      min-height: 158px;
+    }
+
+    .kpi-label {
+      color: var(--muted);
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .kpi-value {
+      font-size: 31px;
+      line-height: 1;
+      font-weight: 740;
+    }
+
+    .kpi-note {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .content-grid {
+      margin-top: 14px;
+      grid-template-columns: minmax(520px, 1.6fr) minmax(320px, 0.9fr);
+      align-items: start;
+    }
+
+    .chart-column {
+      display: grid;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .right-column {
+      display: grid;
+      gap: 14px;
+      align-self: start;
+      min-width: 0;
+    }
+
+    .panel-header {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .panel-title {
+      font-size: 15px;
+      font-weight: 730;
+      margin: 0;
+    }
+
+    .panel-actions {
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .info-dot {
+      position: relative;
+      width: 22px;
+      height: 22px;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      background: #fbfcfb;
+      color: var(--muted);
+      display: inline-grid;
+      place-items: center;
+      font-size: 12px;
+      font-weight: 760;
+      cursor: help;
+      flex: 0 0 auto;
+    }
+
+    .info-dot::after {
+      content: attr(data-tip);
+      position: absolute;
+      right: 0;
+      top: calc(100% + 8px);
+      width: min(320px, 68vw);
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.98);
+      color: var(--ink);
+      box-shadow: var(--shadow);
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 1.42;
+      text-align: left;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-3px);
+      transition: opacity 0.12s ease, transform 0.12s ease;
+      z-index: 15;
+      white-space: normal;
+    }
+
+    .info-dot:hover::after,
+    .info-dot:focus-visible::after {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .chart-wrap {
+      padding: 14px 16px 16px;
+    }
+
+    canvas {
+      width: 100%;
+      height: 360px;
+      display: block;
+      cursor: crosshair;
+    }
+
+    canvas.compact {
+      height: 260px;
+    }
+
+    .factor-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(160px, 1fr));
+      gap: 10px;
+      padding: 14px;
+    }
+
+    .indicator-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(280px, 1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .indicator-chart {
+      padding: 12px 14px 14px;
+    }
+
+    .indicator-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .indicator-title > span {
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
+      text-align: right;
+    }
+
+    .indicator-title .info-dot {
+      width: 18px;
+      height: 18px;
+      font-size: 10px;
+    }
+
+    .factor {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+      min-height: 138px;
+      background: #fbfcfb;
+      overflow: hidden;
+    }
+
+    .factor-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .factor-name {
+      font-weight: 720;
+      font-size: 14px;
+      min-width: 0;
+    }
+
+    .factor .tag {
+      white-space: normal;
+      text-align: center;
+      line-height: 1.18;
+      overflow-wrap: anywhere;
+      flex: 0 1 auto;
+    }
+
+    .scorebar {
+      height: 8px;
+      background: #e8eeeb;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .scorebar span {
+      display: block;
+      height: 100%;
+      border-radius: 999px;
+      width: var(--w);
+      background: var(--c);
+    }
+
+    .factor p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12.5px;
+      line-height: 1.42;
+      overflow-wrap: anywhere;
+    }
+
+    .scenario-list {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+    }
+
+    .scenario {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 13px;
+      display: grid;
+      gap: 11px;
+      background: #fbfcfb;
+    }
+
+    .scenario-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .scenario-name {
+      font-weight: 730;
+    }
+
+    .prob {
+      font-size: 24px;
+      font-weight: 760;
+    }
+
+    .scenario small, .table-note {
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .meter {
+      height: 9px;
+      background: #e8eeeb;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .meter span {
+      height: 100%;
+      display: block;
+      background: var(--blue);
+      width: var(--w);
+    }
+
+    .two-col {
+      margin-top: 14px;
+      grid-template-columns: minmax(380px, 1fr) minmax(380px, 1fr);
+      align-items: start;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      table-layout: fixed;
+    }
+
+    th, td {
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+      padding: 11px 12px;
+      vertical-align: top;
+      overflow-wrap: anywhere;
+    }
+
+    th {
+      color: var(--muted);
+      font-weight: 680;
+      background: #f9fbfa;
+    }
+
+    td strong {
+      font-weight: 720;
+    }
+
+    .change-log {
+      display: grid;
+      padding: 14px;
+    }
+
+    .contribution-list {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+    }
+
+    .attribution-list {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+    }
+
+    .attribution-item {
+      display: grid;
+      grid-template-columns: minmax(110px, 0.8fr) minmax(80px, 0.45fr) 1fr;
+      gap: 10px;
+      align-items: center;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 10px;
+      font-size: 13px;
+    }
+
+    .attribution-item:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .delta {
+      font-weight: 740;
+    }
+
+    .delta.up { color: var(--red); }
+    .delta.down { color: var(--green); }
+    .delta.flat { color: var(--muted); }
+
+    .contribution {
+      display: grid;
+      grid-template-columns: 120px 1fr 62px;
+      gap: 10px;
+      align-items: center;
+      font-size: 13px;
+      position: relative;
+    }
+
+    .contribution[data-tip]::after {
+      content: attr(data-tip);
+      position: absolute;
+      right: 56px;
+      bottom: calc(100% + 8px);
+      width: min(320px, 72vw);
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.98);
+      color: var(--ink);
+      box-shadow: var(--shadow);
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 1.42;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(4px);
+      transition: opacity 0.12s ease, transform 0.12s ease;
+      z-index: 20;
+    }
+
+    .contribution:hover[data-tip]::after,
+    .contribution:focus-within[data-tip]::after {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .contribution-track {
+      height: 10px;
+      border-radius: 999px;
+      background: #e8eeeb;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .contribution-track::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background: #aebbb4;
+    }
+
+    .contribution-bar {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      border-radius: 999px;
+      background: var(--blue);
+      left: var(--left);
+      width: var(--width);
+    }
+
+    .workflow-list {
+      display: grid;
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    .catalyst-list {
+      display: grid;
+      gap: 8px;
+      padding: 12px 14px 14px;
+    }
+
+    .catalyst-item {
+      display: grid;
+      grid-template-columns: 24px minmax(110px, 1fr) auto;
+      gap: 9px;
+      align-items: center;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 8px;
+      font-size: 12px;
+      min-width: 0;
+    }
+
+    .catalyst-item:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .arrow {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: inline-grid;
+      place-items: center;
+      font-weight: 760;
+      background: var(--panel-2);
+      color: var(--muted);
+    }
+
+    .arrow.up { background: var(--red-soft); color: var(--red); }
+    .arrow.down { background: var(--green-soft); color: var(--green); }
+    .arrow.flat { background: var(--blue-soft); color: var(--blue); }
+
+    .catalyst-name {
+      font-weight: 720;
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .catalyst-meta {
+      color: var(--muted);
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .workflow-item {
+      display: grid;
+      grid-template-columns: 26px 1fr;
+      gap: 10px;
+      align-items: start;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .workflow-step {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #17231f;
+      color: white;
+      display: inline-grid;
+      place-items: center;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .driver {
+      display: grid;
+      grid-template-columns: minmax(150px, 0.8fr) minmax(86px, 0.34fr) minmax(86px, 0.34fr) minmax(260px, 1.25fr);
+      gap: 12px;
+      align-items: start;
+      border-bottom: 1px solid var(--line);
+      padding: 9px 0;
+      min-width: 0;
+    }
+
+    .driver.header {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 760;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding-top: 0;
+    }
+
+    .driver:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .driver .driver-name {
+      color: var(--muted);
+      font-size: 13px;
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .driver .driver-value {
+      font-weight: 720;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .driver-current {
+      text-align: right;
+      font-weight: 680;
+      white-space: nowrap;
+    }
+
+    .driver-comment {
+      display: grid;
+      gap: 4px;
+      justify-items: start;
+      min-width: 0;
+    }
+
+    .driver-comment .tag {
+      white-space: normal;
+      line-height: 1.18;
+      text-align: center;
+      overflow-wrap: anywhere;
+    }
+
+    .driver-detail {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
+    .trust-list {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+    }
+
+    .trust-item {
+      display: grid;
+      grid-template-columns: 94px 1fr;
+      gap: 10px;
+      align-items: start;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 10px;
+      font-size: 13px;
+      line-height: 1.42;
+    }
+
+    .trust-item:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .auction-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(130px, 1fr));
+      gap: 10px;
+      padding: 14px;
+    }
+
+    .auction-metric {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: #fbfcfb;
+      display: grid;
+      gap: 7px;
+      min-height: 112px;
+    }
+
+    .auction-metric span:first-child {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .auction-metric strong {
+      font-size: 20px;
+      line-height: 1.05;
+    }
+
+    .notes {
+      width: 100%;
+      min-height: 166px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      resize: vertical;
+      color: var(--ink);
+      background: #fbfcfb;
+    }
+
+    .review {
+      display: none;
+      margin-top: 14px;
+    }
+
+    .review.active {
+      display: grid;
+      gap: 14px;
+    }
+
+    .main-view.hidden {
+      display: none;
+    }
+
+    .review-grid {
+      grid-template-columns: repeat(2, minmax(320px, 1fr));
+    }
+
+    .review ul {
+      margin: 0;
+      padding-left: 19px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .review li {
+      margin-bottom: 8px;
+    }
+
+    .control-row {
+      display: grid;
+      grid-template-columns: 1fr 90px;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .control-row label {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .control-row input {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px 9px;
+      text-align: right;
+      background: #fbfcfb;
+    }
+
+    .footer {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      margin: 18px 2px 0;
+    }
+
+    a { color: var(--blue); }
+
+    @media (max-width: 1100px) {
+      .app { grid-template-columns: 1fr; }
+      aside {
+        position: static;
+        height: auto;
+      }
+      nav {
+        grid-template-columns: repeat(4, minmax(130px, 1fr));
+      }
+      .overview-grid, .content-grid, .two-col, .review-grid {
+        grid-template-columns: 1fr;
+      }
+      .factor-grid {
+        grid-template-columns: repeat(2, minmax(160px, 1fr));
+      }
+      .auction-grid {
+        grid-template-columns: repeat(2, minmax(130px, 1fr));
+      }
+      .indicator-grid {
+        grid-template-columns: 1fr;
+      }
+      .asof { text-align: left; }
+      .topbar { flex-direction: column; }
+      .toolbar { justify-content: flex-start; }
+    }
+
+    @media (max-width: 650px) {
+      main { padding: 14px; }
+      aside { padding: 18px 14px; }
+      nav { grid-template-columns: 1fr 1fr; }
+      .factor-grid { grid-template-columns: 1fr; }
+      .auction-grid { grid-template-columns: 1fr; }
+      .contribution {
+        grid-template-columns: 1fr;
+      }
+      .attribution-item {
+        grid-template-columns: 1fr;
+      }
+      .trust-item {
+        grid-template-columns: 1fr;
+      }
+      .driver {
+        grid-template-columns: 1fr;
+        align-items: start;
+      }
+      .driver .driver-value {
+        text-align: left;
+      }
+      .driver-current {
+        text-align: left;
+      }
+      h2 { font-size: 24px; }
+      canvas { height: 300px; }
+      table { font-size: 12px; }
+      th, td { padding: 9px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <div class="brand">
+        <h1>30Y Yield Path</h1>
+        <p>Daily decision surface for long-end Treasury yield risk.</p>
+      </div>
+      <nav aria-label="Primary">
+        <button class="nav-btn active" data-view="dashboard" title="Daily dashboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 13h8V3H3v10zM13 21h8V3h-8v18zM3 21h8v-6H3v6z"/></svg>
+          Dashboard
+        </button>
+        <button class="nav-btn" data-view="review" title="Plan review">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          Plan Review
+        </button>
+        <button class="nav-btn" data-view="calibration" title="Calibration">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3"/><path d="M2 14h4M10 8h4M18 16h4"/></svg>
+          Calibration
+        </button>
+        <button class="nav-btn" data-view="sources" title="Sources">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          Sources
+        </button>
+      </nav>
+      <div class="sidebar-block">
+        <p class="sidebar-label">Operating Rule</p>
+        <div class="mini-source">Separate market-implied data, macro facts, and analyst judgment. Update the judgment only when the evidence ladder changes.</div>
+      </div>
+      <div class="sidebar-block">
+        <p class="sidebar-label">Daily Inputs</p>
+        <div class="mini-source">30Y yield, real yield, breakevens, 10s30s, MOVE, DXY, oil, S&P, credit spreads, auctions, CPI/payrolls/FOMC.</div>
+      </div>
+    </aside>
+
+    <main>
+      <div class="topbar">
+        <div>
+          <p class="eyebrow">Professional Rates Monitor</p>
+          <h2>Which 30-year yield path is gaining evidence?</h2>
+        </div>
+        <div class="asof">
+          <div id="asOf"></div>
+          <div class="toolbar" aria-label="Chart controls">
+            <div class="segmented" role="group" aria-label="Chart range">
+              <button class="seg-btn active" data-range="daily">Daily</button>
+              <button class="seg-btn" data-range="weekly">Weekly</button>
+              <button class="seg-btn" data-range="monthly">Monthly</button>
+            </div>
+            <button class="icon-btn" id="refreshBtn" title="Recalculate dashboard">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M16 8h5V3"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <section class="main-view" id="dashboardView">
+        <div class="grid overview-grid">
+          <div class="panel pad outlook">
+            <div class="outlook-head">
+              <div>
+                <span class="status-pill range" id="baseCase">Range-bound, upside skew</span>
+                <div class="big-rate" id="headlineRate">4.82%</div>
+              </div>
+              <span class="tag blue" id="confidenceTag">Medium confidence</span>
+            </div>
+            <p class="outlook-copy" id="outlookCopy">The base case is a choppy high-rate range. Real-yield pressure and fiscal supply keep the long end supported, while easing expectations and risk-off episodes cap breakouts.</p>
+          </div>
+
+          <div class="panel pad kpi">
+            <div class="kpi-label">Base Case Probability <span class="tag amber">watch</span></div>
+            <div class="kpi-value" id="baseProb">52%</div>
+            <div class="meter"><span id="baseProbMeter" style="--w:52%"></span></div>
+            <div class="kpi-note">Default view unless inflation or supply signals become one-sided.</div>
+          </div>
+
+          <div class="panel pad kpi">
+            <div class="kpi-label">Upside Break Risk <span class="tag red">term premium</span></div>
+            <div class="kpi-value" id="upProb">31%</div>
+            <div class="meter"><span id="upProbMeter" style="--w:31%; background: var(--red)"></span></div>
+            <div class="kpi-note">Needs weak auctions, sticky inflation, higher oil, or bear steepening.</div>
+          </div>
+
+          <div class="panel pad kpi">
+            <div class="kpi-label">Material Rally Risk <span class="tag green">duration bid</span></div>
+            <div class="kpi-value" id="downProb">17%</div>
+            <div class="meter"><span id="downProbMeter" style="--w:17%; background: var(--green)"></span></div>
+            <div class="kpi-note">Needs labor deterioration, risk-off, or a decisive Fed repricing.</div>
+          </div>
+        </div>
+
+        <section class="panel" style="margin-top:14px">
+          <div class="panel-header">
+            <p class="panel-title">What Changed Today</p>
+            <div class="panel-actions">
+              <span class="tag amber">manual morning check</span>
+            </div>
+          </div>
+          <div class="change-log" id="changeLog"></div>
+        </section>
+
+        <div class="grid content-grid">
+          <div class="chart-column">
+            <section class="panel">
+              <div class="panel-header">
+                <p class="panel-title">30Y Yield, Trend, and Risk Bands</p>
+                <div class="panel-actions">
+                  <span class="tag" id="dataStatus">sample data</span>
+                </div>
+              </div>
+              <div class="chart-wrap">
+                <canvas id="yieldChart" width="920" height="380" aria-label="30-year yield chart"></canvas>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-header">
+                <p class="panel-title">Scenario Probability History</p>
+                <div class="panel-actions">
+                  <span class="tag blue" id="probabilityWindow">daily window</span>
+                </div>
+              </div>
+              <div class="chart-wrap">
+                <canvas class="compact" id="probabilityChart" width="920" height="280" aria-label="Scenario probability history chart"></canvas>
+              </div>
+            </section>
+          </div>
+
+          <div class="right-column">
+            <section class="panel">
+              <div class="panel-header">
+                <p class="panel-title">Scenario Scorecard</p>
+                <div class="panel-actions">
+                  <span class="tag blue">evidence weighted</span>
+                </div>
+              </div>
+              <div class="scenario-list" id="scenarioList"></div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-header">
+                <p class="panel-title">Catalyst Watch</p>
+                <div class="panel-actions">
+                  <span class="tag">5-period travel</span>
+                </div>
+              </div>
+              <div class="catalyst-list" id="catalystWatch"></div>
+            </section>
+          </div>
+        </div>
+
+        <div class="grid two-col" style="margin-top:14px">
+          <section class="panel">
+            <div class="panel-header">
+              <p class="panel-title">Current Factor Contributions</p>
+              <span class="tag" id="modelImpulseTag">model impulse</span>
+            </div>
+            <div class="contribution-list" id="contributionList"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-header">
+              <p class="panel-title">Probability Change Attribution</p>
+              <span class="tag blue" id="attributionWindow">latest period</span>
+            </div>
+            <div class="attribution-list" id="attributionList"></div>
+          </section>
+        </div>
+
+        <section class="panel" style="margin-top:14px">
+          <div class="panel-header">
+            <p class="panel-title">Factor Contribution History</p>
+            <span class="tag" id="contributionWindow">weighted scores</span>
+          </div>
+          <div class="chart-wrap">
+            <canvas class="compact" id="contributionHistoryChart" width="1180" height="280" aria-label="Factor contribution history chart"></canvas>
+          </div>
+        </section>
+
+        <section class="panel pad" style="margin-top:14px">
+          <p class="panel-title">Daily Decision Workflow</p>
+          <div class="workflow-list">
+            <div class="workflow-item"><span class="workflow-step">1</span><span>Refresh data and check source freshness before reading the signal.</span></div>
+            <div class="workflow-item"><span class="workflow-step">2</span><span>Read the yield trend, then confirm whether technical panels agree or diverge.</span></div>
+            <div class="workflow-item"><span class="workflow-step">3</span><span>Review factor contributions to see which forces moved scenario odds.</span></div>
+            <div class="workflow-item"><span class="workflow-step">4</span><span>Check catalysts and invalidation rules before updating the morning note.</span></div>
+          </div>
+        </section>
+
+        <div class="indicator-grid">
+          <section class="panel">
+            <div class="indicator-chart">
+              <div class="indicator-title"><strong>RSI 14</strong><span>overbought / oversold <span class="info-dot" tabindex="0" data-tip="RSI 14 is calculated on the 30-year yield, not bond price. A falling yield tends to pull yield-RSI lower; bond-price RSI would generally move in the opposite direction." aria-label="RSI explanation">i</span></span></div>
+              <canvas class="compact" id="rsiChart" width="580" height="230" aria-label="RSI technical chart"></canvas>
+            </div>
+          </section>
+          <section class="panel">
+            <div class="indicator-chart">
+              <div class="indicator-title"><strong>Stochastic 14</strong><span>range pressure <span class="info-dot" tabindex="0" data-tip="Stochastic 14 measures where the 30-year yield sits inside its recent yield range. Low readings mean yields are near the lower end of that lookback range." aria-label="Stochastic explanation">i</span></span></div>
+              <canvas class="compact" id="stochChart" width="580" height="230" aria-label="Stochastic technical chart"></canvas>
+            </div>
+          </section>
+          <section class="panel">
+            <div class="indicator-chart">
+              <div class="indicator-title"><strong>MACD</strong><span>trend impulse <span class="info-dot" tabindex="0" data-tip="MACD is calculated on the 30-year yield using fast and slow exponential averages. A falling MACD means yield trend impulse is cooling." aria-label="MACD explanation">i</span></span></div>
+              <canvas class="compact" id="macdChart" width="580" height="230" aria-label="MACD technical chart"></canvas>
+            </div>
+          </section>
+          <section class="panel">
+            <div class="indicator-chart">
+              <div class="indicator-title"><strong>63-Day Z-Score</strong><span>yield stretch <span class="info-dot" tabindex="0" data-tip="The 63-day z-score shows how stretched the 30-year yield is versus its recent average. Positive values mean yield is above its recent average; negative values mean below." aria-label="Z-score explanation">i</span></span></div>
+              <canvas class="compact" id="zscoreChart" width="580" height="230" aria-label="Z-score technical chart"></canvas>
+            </div>
+          </section>
+        </div>
+
+        <div class="grid two-col">
+          <section class="panel">
+            <div class="panel-header">
+              <p class="panel-title">Market Confirmation Grid</p>
+              <span class="tag">directional pressure</span>
+            </div>
+            <div class="factor-grid" id="factorGrid"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <p class="panel-title">Signal Trust Check</p>
+              <span class="tag amber" id="trustStatus">watch data quality</span>
+            </div>
+            <div class="trust-list" id="trustList"></div>
+          </section>
+        </div>
+
+        <section class="panel" style="margin-top:14px">
+          <div class="panel-header">
+            <p class="panel-title">Auction Watch</p>
+            <span class="tag amber" id="auctionStatus">TreasuryDirect</span>
+          </div>
+          <div class="auction-grid" id="auctionGrid"></div>
+          <table>
+            <thead><tr><th>Upcoming Long-End Supply</th><th>Auction Date</th><th>Offering</th><th>Context</th></tr></thead>
+            <tbody id="upcomingAuctionTable"></tbody>
+          </table>
+        </section>
+
+        <div class="grid two-col">
+          <section class="panel">
+            <div class="panel-header">
+              <p class="panel-title">Hypothesis Tests</p>
+              <span class="tag">what changes the view</span>
+            </div>
+            <table>
+              <thead><tr><th>Hypothesis</th><th>Confirming Evidence</th><th>Invalidation</th></tr></thead>
+              <tbody id="hypothesisTable"></tbody>
+            </table>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <p class="panel-title">Catalysts and Alerts</p>
+              <span class="tag red">risk control</span>
+            </div>
+            <table>
+              <thead><tr><th>Trigger</th><th>Signal</th><th>Action</th></tr></thead>
+              <tbody id="alertTable"></tbody>
+            </table>
+          </section>
+        </div>
+
+        <section class="panel pad" style="margin-top:14px">
+          <div class="panel-header" style="padding:0 0 12px; border-bottom:0">
+            <p class="panel-title">Morning Notes</p>
+            <span class="tag green" id="saveStatus">local only</span>
+          </div>
+          <textarea class="notes" id="notes" placeholder="Record today's rates thesis, data surprises, positioning risks, and what would change your mind."></textarea>
+        </section>
+      </section>
+
+      <section class="review" id="reviewView">
+        <div class="grid review-grid">
+          <section class="panel pad">
+            <p class="panel-title">Strengths of the Original Plan</p>
+            <ul>
+              <li>It starts with a clear base case and probabilities, which is the right mental model for a daily rates dashboard.</li>
+              <li>The market confirmation grid encourages cross-asset validation instead of staring only at the 30Y yield.</li>
+              <li>The hypothesis scorecard and invalidation rules introduce discipline and reduce narrative drift.</li>
+              <li>The catalyst list correctly focuses attention on CPI, payrolls, Fed pricing, auctions, volatility, and curve behavior.</li>
+            </ul>
+          </section>
+          <section class="panel pad">
+            <p class="panel-title">Weaknesses to Fix</p>
+            <ul>
+              <li>The plan does not define how probabilities are calculated, so the headline outlook can become subjective decoration.</li>
+              <li>It mixes cyclical growth, inflation, fiscal supply, technicals, and risk appetite without ranking their importance for the 30Y point.</li>
+              <li>It lacks a source hierarchy, freshness checks, and a distinction between market-implied data and analyst judgment.</li>
+              <li>It misses term premium, real yield decomposition, auction concession/tails, positioning, and global long-end spillovers.</li>
+              <li>It needs an audit trail showing which signal moved since yesterday and why the scenario odds changed.</li>
+            </ul>
+          </section>
+        </div>
+        <section class="panel pad">
+          <p class="panel-title">Improved Build Specification</p>
+          <ul>
+            <li>Use a two-layer model: hard inputs from market/macro sources, then an explicit judgment overlay for regime and data quality.</li>
+            <li>Make the default page answer three questions in order: where is the yield, what is driving it, and which scenario gained evidence?</li>
+            <li>Track six factor families: Fed path, inflation/real yields, growth risk, term premium/fiscal supply, risk appetite/liquidity, and technicals/positioning.</li>
+            <li>Every alert should map to an action: upgrade upside break risk, downgrade rally risk, check source quality, or wait for a confirming close.</li>
+            <li>Keep daily notes beside the scorecard so the interface becomes a research log, not just a screen of gauges.</li>
+          </ul>
+        </section>
+      </section>
+
+      <section class="review" id="calibrationView">
+        <div class="grid two-col">
+          <section class="panel pad">
+            <p class="panel-title">Signal Calibration</p>
+            <p class="table-note">These weights turn observable factor readings into scenario probabilities. Edit them to match your own process; the dashboard recalculates locally.</p>
+            <div id="controls" style="margin-top:14px"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-header">
+              <p class="panel-title">Model Output</p>
+              <span class="tag blue">transparent heuristic</span>
+            </div>
+            <table>
+              <thead><tr><th>Scenario</th><th>Probability</th><th>Primary Driver</th></tr></thead>
+              <tbody id="modelOutput"></tbody>
+            </table>
+          </section>
+        </div>
+        <section class="panel" style="margin-top:14px">
+          <div class="panel-header">
+            <p class="panel-title">Historical Outcome Checks</p>
+            <span class="tag amber" id="backtestScope">multi-horizon</span>
+          </div>
+          <table>
+            <thead><tr><th>Horizon</th><th>Sample</th><th>Hit Rate</th><th>Latest Evaluable Signal</th><th>Prediction Buckets</th></tr></thead>
+            <tbody id="backtestTable"></tbody>
+          </table>
+        </section>
+      </section>
+
+      <section class="review" id="sourcesView">
+        <section class="panel pad">
+          <p class="panel-title">Recommended Source Stack</p>
+          <table style="margin-top:12px">
+            <thead><tr><th>Data Area</th><th>Preferred Source</th><th>Why It Matters</th></tr></thead>
+            <tbody>
+              <tr><td>Nominal yields</td><td><a href="https://home.treasury.gov/resource-center/data-chart-center/interest-rates" target="_blank" rel="noopener">U.S. Treasury daily rates</a> or <a href="https://fred.stlouisfed.org/series/DGS30" target="_blank" rel="noopener">FRED DGS30</a></td><td>Anchor for the dashboard and moving-average levels.</td></tr>
+              <tr><td>Real yields</td><td><a href="https://fred.stlouisfed.org/series/DFII30" target="_blank" rel="noopener">FRED DFII30</a></td><td>Separates inflation compensation from real-rate pressure.</td></tr>
+              <tr><td>Inflation compensation</td><td><a href="https://fred.stlouisfed.org/series/T10YIE" target="_blank" rel="noopener">FRED breakevens</a> and inflation swaps if available</td><td>Identifies whether yield moves are inflation-led.</td></tr>
+              <tr><td>Fed path</td><td>CME FedWatch, SOFR futures, OIS curves</td><td>Short-rate repricing can cap or amplify the long end.</td></tr>
+              <tr><td>Fiscal and auctions</td><td><a href="https://www.treasurydirect.gov/auctions/upcoming/" target="_blank" rel="noopener">TreasuryDirect auctions</a>, auction tails, bid-to-cover, dealer takedown</td><td>Best daily lens on supply and term-premium stress.</td></tr>
+              <tr><td>Risk and volatility</td><td>MOVE, VIX, S&P 500, credit OAS, DXY, oil</td><td>Frames flight-to-quality demand and inflation shocks.</td></tr>
+            </tbody>
+          </table>
+        </section>
+        <section class="panel pad" style="margin-top:14px">
+          <p class="panel-title">Source Freshness</p>
+          <table style="margin-top:12px">
+            <thead><tr><th>Series</th><th>Latest</th><th>Source</th><th>Status</th></tr></thead>
+            <tbody id="freshnessTable"></tbody>
+          </table>
+        </section>
+        <section class="panel pad" style="margin-top:14px">
+          <p class="panel-title">Probability Methodology</p>
+          <p class="table-note">Scenario probabilities are model-implied weights from technical, real-rate, breakeven, curve and risk-appetite factors. They are a transparent decision aid, not calibrated investment forecasts yet.</p>
+        </section>
+        <p class="footer">This local build uses refreshed FRED data and Yahoo market proxies when available. It should not be treated as investment advice or a live market-data terminal until the refresh process and factor model are reviewed against your preferred source set.</p>
+      </section>
+
+      <p class="footer">Valuation and market inputs can change quickly. Verify live data before using this dashboard for investment decisions.</p>
+    </main>
+  </div>
+
+  <script>
+    const state = {
+      range: "daily",
+      dashboardData: null,
+      probabilityHoverIndex: null,
+      factors: [
+        { id: "fed", name: "Fed path", score: -1, weight: 18, text: "Cuts priced or dovish OIS repricing supports lower long-end yields." },
+        { id: "inflation", name: "Breakevens", score: 1, weight: 20, text: "Sticky breakevens, oil, and surprise inflation keep upside pressure alive." },
+        { id: "growth", name: "Growth risk", score: 0, weight: 16, text: "Mixed labor and activity data keep recession rally risk contained." },
+        { id: "fiscal", name: "Fiscal supply", score: 2, weight: 18, text: "Deficits, refunding, and weak auctions lift term-premium risk." },
+        { id: "risk", name: "Risk appetite", score: 1, weight: 12, text: "Firm equities and tight credit reduce defensive duration demand." },
+        { id: "technical", name: "Technicals", score: 1, weight: 16, text: "Yield is near upper range but needs a closing breakout for confirmation." }
+      ],
+      notes: localStorage.getItem("thirtyYearYieldNotes") || ""
+    };
+
+    const fallbackSeries = {
+      daily: [4.48,4.51,4.56,4.52,4.59,4.63,4.61,4.67,4.71,4.69,4.73,4.76,4.70,4.74,4.78,4.83,4.80,4.85,4.88,4.82],
+      weekly: [4.18,4.25,4.31,4.29,4.37,4.44,4.49,4.42,4.52,4.58,4.62,4.57,4.66,4.74,4.82],
+      monthly: [3.94,4.03,4.18,4.32,4.27,4.41,4.56,4.48,4.63,4.72,4.82,4.76]
+    };
+
+    const palette = {
+      ink: "#17231f",
+      blue: "#0072b2",
+      sky: "#56b4e9",
+      green: "#009e73",
+      orange: "#e69f00",
+      vermilion: "#d55e00",
+      purple: "#cc79a7",
+      muted: "#66736d",
+      grid: "#e4ebe7"
+    };
+
+    const scenarios = [
+      { id: "break_higher", legacyId: "up", name: "Upside Break", label: "Yields break higher", color: palette.vermilion, thesis: "Term premium and inflation risk overwhelm easing hopes." },
+      { id: "range_bound", legacyId: "base", name: "Range-Bound", label: "Yields churn in high range", color: palette.blue, thesis: "Mixed growth and sticky inflation keep the long end boxed in." },
+      { id: "rally_lower", legacyId: "down", name: "Duration Rally", label: "Yields fall materially", color: palette.green, thesis: "Growth shock, risk-off, or Fed repricing creates duration demand." }
+    ];
+
+    const changes = [
+      { name: "30Y nominal yield", value: "+6 bp", level: "watch", label: "Manual check", detail: "Refresh source data to evaluate the live range thresholds." },
+      { name: "30Y real yield", value: "+4 bp", level: "watch", label: "Manual check", detail: "Refresh source data to evaluate the real-yield pain point." },
+      { name: "10Y breakevens", value: "+2 bp", level: "watch", label: "Manual check", detail: "Refresh source data to evaluate breakeven thresholds." },
+      { name: "10s30s curve", value: "+3 bp steeper", level: "watch", label: "Manual check", detail: "Refresh source data to evaluate curve thresholds." },
+      { name: "MOVE volatility", value: "higher", level: "watch", label: "Manual check", detail: "Refresh source data to evaluate volatility thresholds." },
+      { name: "VIX volatility", value: "higher", level: "watch", label: "Manual check", detail: "Refresh source data to evaluate equity-volatility thresholds." },
+      { name: "DXY dollar index", value: "firmer", level: "watch", label: "Manual check", detail: "Refresh source data to evaluate dollar thresholds." },
+      { name: "Gold futures", value: "higher", level: "watch", label: "Manual check", detail: "Refresh source data to evaluate gold thresholds." },
+      { name: "Oil / dollar impulse", value: "firmer", level: "watch", label: "Manual check", detail: "Refresh source data to evaluate commodity thresholds." },
+      { name: "Auction read-through", value: "watch next supply", level: "watch", label: "Manual check", detail: "Refresh source data to evaluate auction thresholds." }
+    ];
+
+    function bpChange(current, prior) {
+      if (!Number.isFinite(current) || !Number.isFinite(prior)) return "n/a";
+      const bps = Math.round((current - prior) * 100);
+      return `${bps >= 0 ? "+" : ""}${bps} bp`;
+    }
+
+    function valueChange(current, prior, suffix = "") {
+      if (!Number.isFinite(current) || !Number.isFinite(prior)) return "n/a";
+      const change = current - prior;
+      return `${change >= 0 ? "+" : ""}${change.toFixed(2)}${suffix}`;
+    }
+
+    function pctChange(current, prior) {
+      if (!Number.isFinite(current) || !Number.isFinite(prior) || prior === 0) return "n/a";
+      const change = (current / prior - 1) * 100;
+      return `${change >= 0 ? "+" : ""}${change.toFixed(1)}%`;
+    }
+
+    function currentValue(name, latest) {
+      const value = key => Number(latest?.[key]);
+      const pct = key => Number.isFinite(value(key)) ? `${value(key).toFixed(2)}%` : "n/a";
+      const num = (key, decimals = 2) => Number.isFinite(value(key)) ? value(key).toFixed(decimals) : "n/a";
+      if (name === "30Y nominal yield") return pct("dgs30");
+      if (name === "30Y real yield") return pct("dfii30");
+      if (name === "10Y breakevens") return pct("t10yie");
+      if (name === "10s30s curve") return Number.isFinite(value("curve_10s30s")) ? `${Math.round(value("curve_10s30s") * 100)} bp` : "n/a";
+      if (name === "MOVE volatility") return num("move", 1);
+      if (name === "VIX volatility") return num("vix", 1);
+      if (name === "High yield OAS") return pct("hy_oas");
+      if (name === "DXY dollar index") return num("dxy", 2);
+      if (name === "Gold futures") return Number.isFinite(value("gold")) ? `$${value("gold").toFixed(0)}` : "n/a";
+      if (name === "WTI crude oil") return Number.isFinite(value("oil")) ? `$${value("oil").toFixed(0)}` : "n/a";
+      return "n/a";
+    }
+
+    function thresholdFlag(name, latest) {
+      const value = key => Number(latest?.[key]);
+      const flag = (level, label, detail) => ({ level, label, detail });
+      if (!latest) return flag("gap", "Data gap", "Current source data is not loaded.");
+
+      if (name === "30Y nominal yield") {
+        const yld = value("dgs30");
+        if (!Number.isFinite(yld)) return flag("gap", "Data gap", "30Y nominal yield is unavailable.");
+        if (yld >= 5) return flag("pain", "Breakout risk", "Above 5.00% resistance; working against a stable range base case.");
+        if (yld <= 4.6) return flag("pain", "Range break", "Below 4.60% support; duration-rally case needs more weight.");
+        if (yld >= 4.95) return flag("watch", "Near resistance", "Within 5 bp of the 5.00% upside threshold.");
+        if (yld <= 4.65) return flag("watch", "Near support", "Within 5 bp of the 4.60% downside threshold.");
+        return flag("ok", "Inside range", "Still between the dashboard's 4.60%-5.00% range markers.");
+      }
+
+      if (name === "30Y real yield") {
+        const realYield = value("dfii30");
+        if (!Number.isFinite(realYield)) return flag("gap", "Data gap", "30Y real yield is unavailable.");
+        if (realYield >= 2.5) return flag("pain", "Real-rate pain", "At or above 2.50%; real yields are materially pressuring duration.");
+        if (realYield >= 2.35) return flag("watch", "Real-rate watch", "Above 2.35%; watch for renewed long-end pressure.");
+        return flag("ok", "Contained", "Below the 2.35% real-yield watch line.");
+      }
+
+      if (name === "10Y breakevens") {
+        const breakeven = value("t10yie");
+        if (!Number.isFinite(breakeven)) return flag("gap", "Data gap", "10Y breakeven is unavailable.");
+        if (breakeven >= 2.5) return flag("pain", "Breakeven pain", "At or above 2.50%; inflation compensation is pushing against the base case.");
+        if (breakeven >= 2.35) return flag("watch", "Breakeven watch", "Above 2.35%; breakevens are becoming a higher-yield risk.");
+        if (breakeven <= 2.0) return flag("watch", "Disinflation watch", "At or below 2.00%; lower-yield scenario needs attention.");
+        return flag("ok", "Contained", "Breakevens remain between the watch thresholds.");
+      }
+
+      if (name === "10s30s curve") {
+        const curve = value("curve_10s30s");
+        if (!Number.isFinite(curve)) return flag("gap", "Data gap", "10s30s curve is unavailable.");
+        if (curve >= 0.25) return flag("pain", "Bear steepener", "At or above +25 bp; term-premium pressure is material.");
+        if (curve >= 0.15) return flag("watch", "Steepening watch", "At or above +15 bp; monitor fiscal and auction pressure.");
+        if (curve <= -0.15) return flag("watch", "Flattening watch", "At or below -15 bp; lower-growth or easing pressure is rising.");
+        return flag("ok", "Contained", "Curve remains inside the watch band.");
+      }
+
+      if (name === "VIX volatility") {
+        const vix = value("vix");
+        if (!Number.isFinite(vix)) return flag("gap", "Data gap", "VIX is unavailable.");
+        if (vix >= 25) return flag("pain", "Risk-off pain", "VIX at or above 25; flight-to-duration risk is elevated.");
+        if (vix >= 20) return flag("watch", "Risk watch", "VIX at or above 20; defensive demand could build.");
+        return flag("ok", "Calm risk", "VIX remains below the risk-off watch line.");
+      }
+
+      if (name === "MOVE volatility") {
+        const move = value("move");
+        if (!Number.isFinite(move)) return flag("gap", "Data gap", "MOVE is unavailable from the current market-data cache.");
+        if (move >= 130) return flag("pain", "Rates-vol pain", "MOVE at or above 130; Treasury volatility is working against confidence in the base case.");
+        if (move >= 110) return flag("watch", "Vol watch", "MOVE at or above 110; rate volatility deserves attention.");
+        return flag("ok", "Contained", "MOVE remains below the rates-volatility watch line.");
+      }
+
+      if (name === "High yield OAS") {
+        const spread = value("hy_oas");
+        if (!Number.isFinite(spread)) return flag("gap", "Data gap", "High-yield OAS is unavailable.");
+        if (spread >= 4.5) return flag("pain", "Credit pain", "HY OAS at or above 4.50%; credit stress is working against higher-yield confidence.");
+        if (spread >= 3.75) return flag("watch", "Spread watch", "HY OAS at or above 3.75%; widening deserves attention.");
+        return flag("ok", "Contained", "High-yield spreads remain below the watch line.");
+      }
+
+      if (name === "WTI crude oil") {
+        const oil = value("oil");
+        if (!Number.isFinite(oil)) return flag("gap", "Data gap", "WTI crude is unavailable.");
+        if (oil >= 90) return flag("pain", "Oil inflation", "WTI at or above $90; energy is a clear inflation-pressure risk.");
+        if (oil >= 80) return flag("watch", "Oil watch", "WTI at or above $80; energy pressure is worth monitoring.");
+        if (oil <= 65) return flag("watch", "Growth watch", "WTI at or below $65; softer growth/inflation impulse may be developing.");
+        return flag("ok", "Contained", "WTI remains between commodity watch thresholds.");
+      }
+
+      if (name === "DXY dollar index") {
+        const dxy = value("dxy");
+        if (!Number.isFinite(dxy)) return flag("gap", "Data gap", "DXY is unavailable from the current market-data cache.");
+        if (dxy >= 105) return flag("watch", "Dollar pressure", "DXY at or above 105; tighter financial conditions can pressure risk assets.");
+        if (dxy <= 98) return flag("watch", "Dollar easing", "DXY at or below 98; easier dollar conditions may support risk appetite.");
+        return flag("ok", "Contained", "DXY remains inside the dashboard watch band.");
+      }
+
+      if (name === "Gold futures") {
+        const gold = value("gold");
+        if (!Number.isFinite(gold)) return flag("gap", "Data gap", "Gold is unavailable from the current market-data cache.");
+        if (gold >= 2600) return flag("watch", "Hedge bid", "Gold above $2,600; inflation, debasement, or risk-hedge demand may be rising.");
+        if (gold <= 2200) return flag("watch", "Hedge cooling", "Gold below $2,200; inflation/risk hedge pressure may be cooling.");
+        return flag("ok", "Contained", "Gold remains inside the dashboard watch band.");
+      }
+
+      return flag("watch", "Manual check", "No threshold has been configured for this line.");
+    }
+
+    function derivedChanges() {
+      const rows = rowsForRange();
+      if (!state.dashboardData || rows.length < 2) return changes;
+      const latest = rows[rows.length - 1];
+      const prior = rows[rows.length - 2];
+      return [
+        ["30Y nominal yield", bpChange(Number(latest.dgs30), Number(prior.dgs30))],
+        ["30Y real yield", bpChange(Number(latest.dfii30), Number(prior.dfii30))],
+        ["10Y breakevens", bpChange(Number(latest.t10yie), Number(prior.t10yie))],
+        ["10s30s curve", bpChange(Number(latest.curve_10s30s), Number(prior.curve_10s30s))],
+        ["MOVE volatility", valueChange(Number(latest.move), Number(prior.move))],
+        ["VIX volatility", valueChange(Number(latest.vix), Number(prior.vix))],
+        ["High yield OAS", bpChange(Number(latest.hy_oas), Number(prior.hy_oas))],
+        ["DXY dollar index", pctChange(Number(latest.dxy), Number(prior.dxy))],
+        ["Gold futures", pctChange(Number(latest.gold), Number(prior.gold))],
+        ["WTI crude oil", valueChange(Number(latest.oil), Number(prior.oil), "")]
+      ].map(([name, value]) => ({ name, value, current: currentValue(name, latest), ...thresholdFlag(name, latest) }));
+    }
+
+    const hypotheses = [
+      ["Yields break higher", "Hot CPI, higher oil, bear steepening, weak 30Y auction, close above resistance", "Softer payrolls, falling real yields, strong duration demand"],
+      ["Yields stay range-bound", "Mixed data, Fed patience, no sustained technical breakout", "Clean growth shock or inflation/supply shock"],
+      ["Yields fall materially", "Claims trend higher, payrolls miss, credit widens, Fed cuts repriced", "Firm labor, sticky inflation, weak auctions"]
+    ];
+
+    const alerts = [
+      ["30Y close above resistance", "Two closes above upper band", "Upgrade upside break risk"],
+      ["Break below 200d average", "Close and follow-through", "Upgrade rally risk"],
+      ["10s30s bear steepens", "+10 bp over five sessions", "Check term premium and supply"],
+      ["Breakevens rise persistently", "Five-day advance", "Check inflation-led repricing"],
+      ["Auction tail", "Tail > 1.5 bp and weak bid-to-cover", "Raise fiscal/supply score"],
+      ["Payrolls/CPI surprise", "Large miss or beat", "Recalculate scenario odds"]
+    ];
+
+    const fmt = value => `${Math.round(value)}%`;
+    const chartHover = {};
+
+    const panelInfo = {
+      "30Y Yield, Trend, and Risk Bands": "Daily constant-maturity 30-year Treasury yield from FRED, with moving averages and fixed 4.60% / 5.00% range markers. FRED provides one daily yield observation, not OHLC bars.",
+      "Scenario Probability History": "Model-implied scenario probabilities are calculated from technical, real-rate, breakeven, curve and risk factors. The chart shows how the decision framework has shifted over the active time window.",
+      "Scenario Scorecard": "The three scenarios are mutually exclusive dashboard hypotheses. They are evidence-weighted decision aids, not calibrated investment forecasts.",
+      "Current Factor Contributions": "Weighted factor scores show what is pushing the model toward higher yields or lower yields today. Positive values lean higher-yield; negative values lean lower-yield.",
+      "Probability Change Attribution": "Rows compare scenario probabilities versus the prior period and identify the factor movement most relevant to that scenario.",
+      "Factor Contribution History": "This chart shows how the model's weighted factor inputs have changed through time, using the same period window as the main view.",
+      "Catalyst Watch": "A compact scan of market catalysts versus their prior five-period average. Arrows show direction of travel, not a standalone trading signal.",
+      "Market Confirmation Grid": "The grid converts current market conditions into directional pressure signals for the long end: Fed path, breakevens, growth, fiscal supply, risk appetite and technicals.",
+      "Signal Trust Check": "These checks flag freshness, source coverage, signal margin, churn, factor conflict and calibration stability before the probability read is trusted.",
+      "What Changed Today": "Each row shows the latest period change plus whether the current level has crossed a watch or pain threshold relevant to the base case."
+    };
+
+    const indicatorInfo = {
+      rsiChart: "RSI 14 is calculated on the 30-year yield, not bond price. A falling yield tends to pull yield-RSI lower; bond-price RSI would generally move in the opposite direction.",
+      stochChart: "Stochastic 14 measures where the 30-year yield sits inside its recent yield range. Low readings mean yields are near the lower end of that lookback range.",
+      macdChart: "MACD is calculated on the 30-year yield using fast and slow exponential averages. A falling MACD means yield trend impulse is cooling.",
+      zscoreChart: "The 63-day z-score shows how stretched the 30-year yield is versus its recent average. Positive values mean yield is above its recent average; negative values mean below."
+    };
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function fallbackRows() {
+      return fallbackSeries[state.range].map((value, idx, arr) => ({
+        date: `T-${arr.length - idx - 1}`,
+        dgs30: value,
+        ma20: null,
+        ma50: null,
+        ma100: null,
+        ma200: null,
+        probabilities: null
+      }));
+    }
+
+    function rowsForRange() {
+      const periods = state.dashboardData && state.dashboardData.periods;
+      if (periods && periods[state.range] && periods[state.range].length) return periods[state.range];
+      return fallbackRows();
+    }
+
+    function formatDateTick(value) {
+      if (!value) return "";
+      if (String(value).startsWith("T-")) return value;
+      const parsed = new Date(`${value}T00:00:00Z`);
+      if (Number.isNaN(parsed.getTime())) return String(value);
+      const options = state.range === "daily"
+        ? { month: "short", day: "numeric" }
+        : { month: "short", year: "2-digit" };
+      return parsed.toLocaleDateString(undefined, options);
+    }
+
+    function dateTickIndexes(rows, maxTicks = 5) {
+      if (!rows || rows.length <= 1) return [];
+      const count = Math.min(maxTicks, rows.length);
+      const indexes = [];
+      for (let i = 0; i < count; i++) {
+        indexes.push(Math.round((i / Math.max(1, count - 1)) * (rows.length - 1)));
+      }
+      return [...new Set(indexes)];
+    }
+
+    function drawDateAxis(ctx, rows, xForIndex, yBase, maxTicks = 5) {
+      ctx.save();
+      ctx.fillStyle = palette.muted;
+      ctx.strokeStyle = "#edf2ef";
+      ctx.lineWidth = 1;
+      ctx.font = "11px Inter, system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      dateTickIndexes(rows, maxTicks).forEach(idx => {
+        const xPos = xForIndex(idx);
+        ctx.beginPath();
+        ctx.moveTo(xPos, yBase - 5);
+        ctx.lineTo(xPos, yBase - 1);
+        ctx.stroke();
+        ctx.fillText(formatDateTick(rows[idx]?.date), xPos, yBase);
+      });
+      ctx.restore();
+    }
+
+    function bindChartHover(canvasId, redraw) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas || canvas.dataset.hoverBound) return;
+      canvas.dataset.hoverBound = "true";
+      canvas.addEventListener("mousemove", event => {
+        const rect = canvas.getBoundingClientRect();
+        chartHover[canvasId] = {
+          x: event.clientX - rect.left,
+          y: event.clientY - rect.top
+        };
+        redraw();
+      });
+      canvas.addEventListener("mouseleave", () => {
+        delete chartHover[canvasId];
+        redraw();
+      });
+    }
+
+    function hoverIndex(canvasId, rows, pad, w) {
+      const hover = chartHover[canvasId];
+      if (!hover || !rows.length) return null;
+      const ratio = clamp((hover.x - pad.left) / Math.max(1, w - pad.left - pad.right), 0, 1);
+      return Math.round(ratio * Math.max(0, rows.length - 1));
+    }
+
+    function drawHoverOverlay(ctx, canvasId, rows, pad, w, h, xForIndex, yPosition, lines) {
+      const idx = hoverIndex(canvasId, rows, pad, w);
+      if (idx == null || !rows[idx]) return;
+      const hover = chartHover[canvasId];
+      const xPos = xForIndex(idx);
+      const yPos = Number.isFinite(yPosition) ? yPosition : clamp(hover.y, pad.top, h - pad.bottom);
+      ctx.save();
+      ctx.strokeStyle = "rgba(23, 35, 31, 0.36)";
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(xPos, pad.top);
+      ctx.lineTo(xPos, h - pad.bottom);
+      ctx.moveTo(pad.left, yPos);
+      ctx.lineTo(w - pad.right, yPos);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      const title = formatDateTick(rows[idx].date);
+      const textLines = [title, ...lines.filter(Boolean)];
+      ctx.font = "12px Inter, system-ui, sans-serif";
+      const boxW = Math.min(260, Math.max(...textLines.map(line => ctx.measureText(line).width)) + 22);
+      const boxH = 14 + textLines.length * 17;
+      let boxX = xPos + 12;
+      let boxY = yPos + 12;
+      if (boxX + boxW > w - 6) boxX = xPos - boxW - 12;
+      if (boxY + boxH > h - pad.bottom) boxY = yPos - boxH - 12;
+      boxX = clamp(boxX, pad.left + 4, w - boxW - 4);
+      boxY = clamp(boxY, pad.top + 4, h - boxH - 4);
+
+      ctx.fillStyle = "rgba(255, 255, 255, 0.94)";
+      ctx.strokeStyle = "rgba(216, 223, 219, 0.95)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(boxX, boxY, boxW, boxH, 7);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = palette.ink;
+      ctx.font = "700 12px Inter, system-ui, sans-serif";
+      ctx.fillText(title, boxX + 10, boxY + 18);
+      ctx.font = "12px Inter, system-ui, sans-serif";
+      ctx.fillStyle = palette.muted;
+      lines.filter(Boolean).forEach((line, lineIdx) => {
+        ctx.fillText(line, boxX + 10, boxY + 35 + lineIdx * 17);
+      });
+      ctx.restore();
+    }
+
+    function latestRow() {
+      const rows = rowsForRange();
+      return rows[rows.length - 1];
+    }
+
+    function activeProbabilities() {
+      const row = latestRow();
+      if (row && row.probabilities) return row.probabilities;
+      const fallback = computeProbabilities();
+      return {
+        break_higher: fallback.up,
+        range_bound: fallback.base,
+        rally_lower: fallback.down
+      };
+    }
+
+    function clamp(v, min, max) {
+      return Math.max(min, Math.min(max, v));
+    }
+
+    function computeProbabilities() {
+      const weighted = state.factors.reduce((sum, f) => sum + f.score * f.weight, 0);
+      const totalWeight = state.factors.reduce((sum, f) => sum + f.weight, 0);
+      const impulse = weighted / totalWeight;
+      const dispersion = state.factors.reduce((sum, f) => sum + Math.abs(f.score) * f.weight, 0) / totalWeight;
+      const up = clamp(24 + impulse * 18 + Math.max(0, dispersion - 0.55) * 10, 8, 62);
+      const down = clamp(22 - impulse * 15 + (state.factors.find(f => f.id === "growth").score < 0 ? 8 : 0), 7, 58);
+      const base = clamp(100 - up - down, 25, 70);
+      const normalizer = 100 / (up + down + base);
+      return {
+        up: Math.round(up * normalizer),
+        down: Math.round(down * normalizer),
+        base: Math.round(base * normalizer),
+        impulse
+      };
+    }
+
+    function renderHeader() {
+      const latest = latestRow();
+      document.getElementById("headlineRate").textContent = `${Number(latest.dgs30).toFixed(2)}%`;
+      const sourceDate = state.dashboardData?.metadata?.latest_date;
+      const fetchedAt = state.dashboardData?.metadata?.fetched_at;
+      document.getElementById("asOf").textContent = sourceDate ? `Latest source date ${sourceDate}` : `As of ${new Date().toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" })}`;
+      document.getElementById("dataStatus").textContent = fetchedAt ? `FRED refresh ${new Date(fetchedAt).toLocaleString()}` : "sample data";
+      document.getElementById("probabilityWindow").textContent = state.range === "daily" ? "1-year daily window" : state.range === "weekly" ? "4-year weekly window" : "8-year monthly window";
+      document.getElementById("contributionWindow").textContent = state.range === "daily" ? "daily factor path" : state.range === "weekly" ? "weekly factor path" : "monthly factor path";
+      document.getElementById("attributionWindow").textContent = state.range === "daily" ? "since prior session" : state.range === "weekly" ? "since prior week" : "since prior month";
+      const probs = activeProbabilities();
+      document.getElementById("baseProb").textContent = fmt(probs.range_bound);
+      document.getElementById("upProb").textContent = fmt(probs.break_higher);
+      document.getElementById("downProb").textContent = fmt(probs.rally_lower);
+      document.getElementById("baseProbMeter").style.setProperty("--w", `${probs.range_bound}%`);
+      document.getElementById("upProbMeter").style.setProperty("--w", `${probs.break_higher}%`);
+      document.getElementById("downProbMeter").style.setProperty("--w", `${probs.rally_lower}%`);
+      const baseCase = probs.break_higher > probs.rally_lower + 12 ? "Range-bound, upside skew" : probs.rally_lower > probs.break_higher + 10 ? "Range-bound, downside skew" : "Range-bound, balanced";
+      document.getElementById("baseCase").textContent = baseCase;
+      document.getElementById("confidenceTag").textContent = probs.range_bound >= 55 ? "Higher confidence" : "Medium confidence";
+    }
+
+    function colorForScore(score) {
+      if (score >= 2) return ["var(--red)", "red", "Higher-yield pressure"];
+      if (score === 1) return ["var(--amber)", "amber", "Moderate higher-yield pressure"];
+      if (score === 0) return ["var(--blue)", "blue", "Mixed"];
+      return ["var(--green)", "green", "Lower-yield pressure"];
+    }
+
+    function renderFactors() {
+      const host = document.getElementById("factorGrid");
+      host.innerHTML = "";
+      state.factors.forEach(f => {
+        const [color, tag, label] = colorForScore(f.score);
+        const width = ((f.score + 2) / 4) * 100;
+        const el = document.createElement("article");
+        el.className = "factor";
+        el.innerHTML = `
+          <div class="factor-top">
+            <span class="factor-name">${f.name}</span>
+            <span class="tag ${tag}">${label}</span>
+          </div>
+          <div class="scorebar"><span style="--w:${width}%; --c:${color}"></span></div>
+          <p>${f.text}</p>
+        `;
+        host.appendChild(el);
+      });
+    }
+
+    function renderScenarios() {
+      const probs = activeProbabilities();
+      const host = document.getElementById("scenarioList");
+      host.innerHTML = "";
+      scenarios.forEach(s => {
+        const probability = probs[s.id];
+        const el = document.createElement("article");
+        el.className = "scenario";
+        el.innerHTML = `
+          <div class="scenario-row">
+            <div>
+              <div class="scenario-name">${s.name}</div>
+              <small>${s.label}</small>
+            </div>
+            <div class="prob">${probability}%</div>
+          </div>
+          <div class="meter"><span style="--w:${probability}%; background:${s.color}"></span></div>
+          <small>${s.thesis}</small>
+        `;
+        host.appendChild(el);
+      });
+    }
+
+    function movingAverage(values, window) {
+      return values.map((_, i) => {
+        const start = Math.max(0, i - window + 1);
+        const slice = values.slice(start, i + 1);
+        return slice.reduce((a, b) => a + b, 0) / slice.length;
+      });
+    }
+
+    function drawChart() {
+      const canvas = document.getElementById("yieldChart");
+      const ctx = canvas.getContext("2d");
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+      const w = rect.width;
+      const h = rect.height;
+      const pad = { left: 46, right: 18, top: 20, bottom: 54 };
+      const rows = rowsForRange();
+      const data = rows.map(row => Number(row.dgs30)).filter(Number.isFinite);
+      const maFast = rows.some(row => row.ma50) ? rows.map(row => row.ma50 || row.dgs30) : movingAverage(data, Math.max(3, Math.round(data.length / 6)));
+      const maSlow = rows.some(row => row.ma200) ? rows.map(row => row.ma200 || row.dgs30) : movingAverage(data, Math.max(5, Math.round(data.length / 3)));
+      const min = Math.min(...data, ...maFast, ...maSlow, 4.55) - 0.08;
+      const max = Math.max(...data, ...maFast, ...maSlow, 5.02) + 0.08;
+      const x = i => pad.left + (i / Math.max(1, data.length - 1)) * (w - pad.left - pad.right);
+      const y = v => pad.top + (max - v) / (max - min) * (h - pad.top - pad.bottom);
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.strokeStyle = palette.grid;
+      ctx.lineWidth = 1;
+      ctx.fillStyle = "#66736d";
+      ctx.font = "12px Inter, system-ui, sans-serif";
+      for (let i = 0; i <= 4; i++) {
+        const v = min + (i / 4) * (max - min);
+        const yy = y(v);
+        ctx.beginPath();
+        ctx.moveTo(pad.left, yy);
+        ctx.lineTo(w - pad.right, yy);
+        ctx.stroke();
+        ctx.fillText(`${v.toFixed(2)}%`, 6, yy + 4);
+      }
+
+      const levels = [
+        { value: 5.0, color: palette.vermilion, label: "5.00 resistance" },
+        { value: 4.6, color: palette.green, label: "4.60 support" }
+      ];
+      levels.forEach(level => {
+        const yy = y(level.value);
+        ctx.strokeStyle = level.color;
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(pad.left, yy);
+        ctx.lineTo(w - pad.right, yy);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = level.color;
+        ctx.fillText(level.label, w - pad.right - 105, yy - 6);
+      });
+
+      function line(values, color, width) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width;
+        ctx.beginPath();
+        values.forEach((v, i) => {
+          if (i === 0) ctx.moveTo(x(i), y(v));
+          else ctx.lineTo(x(i), y(v));
+        });
+        ctx.stroke();
+      }
+
+      line(maSlow, palette.orange, 2);
+      line(maFast, palette.blue, 2);
+      line(data, palette.ink, 3);
+
+      const lastX = x(data.length - 1);
+      const lastY = y(data[data.length - 1]);
+      ctx.fillStyle = palette.ink;
+      ctx.beginPath();
+      ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.font = "600 12px Inter, system-ui, sans-serif";
+      ctx.fillText(`${data[data.length - 1].toFixed(2)}%`, lastX - 34, lastY - 13);
+
+      const hoverIdx = hoverIndex("yieldChart", rows, pad, w);
+      if (hoverIdx != null && Number.isFinite(data[hoverIdx])) {
+        drawHoverOverlay(ctx, "yieldChart", rows, pad, w, h, x, y(data[hoverIdx]), [
+          `30Y ${data[hoverIdx].toFixed(2)}%`,
+          `50d MA ${Number(maFast[hoverIdx]).toFixed(2)}%`,
+          `200d MA ${Number(maSlow[hoverIdx]).toFixed(2)}%`
+        ]);
+      }
+
+      ctx.fillStyle = "#66736d";
+      ctx.font = "12px Inter, system-ui, sans-serif";
+      drawDateAxis(ctx, rows, x, h - 31);
+      ctx.fillText("30Y", pad.left, h - 10);
+      ctx.fillStyle = palette.blue;
+      ctx.fillText(state.dashboardData ? "50d MA" : "fast MA", pad.left + 42, h - 10);
+      ctx.fillStyle = palette.orange;
+      ctx.fillText(state.dashboardData ? "200d MA" : "slow MA", pad.left + 104, h - 10);
+    }
+
+    function drawProbabilityChart() {
+      const canvas = document.getElementById("probabilityChart");
+      const ctx = canvas.getContext("2d");
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+      const w = rect.width;
+      const h = rect.height;
+      const pad = { left: 46, right: 18, top: 30, bottom: 48 };
+      const rows = rowsForRange();
+      const probabilities = rows.map((row) => row.probabilities || activeProbabilities());
+      const x = i => pad.left + (i / Math.max(1, rows.length - 1)) * (w - pad.left - pad.right);
+      const y = v => pad.top + (100 - v) / 100 * (h - pad.top - pad.bottom);
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = palette.grid;
+      ctx.lineWidth = 1;
+      ctx.fillStyle = "#66736d";
+      ctx.font = "12px Inter, system-ui, sans-serif";
+      [0, 25, 50, 75, 100].forEach(v => {
+        const yy = y(v);
+        ctx.beginPath();
+        ctx.moveTo(pad.left, yy);
+        ctx.lineTo(w - pad.right, yy);
+        ctx.stroke();
+        ctx.fillText(`${v}%`, 8, yy + 4);
+      });
+
+      function line(key, color) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2.4;
+        ctx.beginPath();
+        probabilities.forEach((p, i) => {
+          const value = p[key] ?? 0;
+          if (i === 0) ctx.moveTo(x(i), y(value));
+          else ctx.lineTo(x(i), y(value));
+        });
+        ctx.stroke();
+      }
+      line("break_higher", palette.vermilion);
+      line("range_bound", palette.blue);
+      line("rally_lower", palette.green);
+
+      const legend = [
+        ["Break higher", palette.vermilion],
+        ["Range", palette.blue],
+        ["Rally", palette.green]
+      ];
+      legend.forEach(([label, color], idx) => {
+        const lx = pad.left + idx * 104;
+        ctx.fillStyle = color;
+        ctx.fillRect(lx, 13, 14, 4);
+        ctx.fillStyle = "#66736d";
+        ctx.fillText(label, lx + 20, 17);
+      });
+      const hoverIdx = hoverIndex("probabilityChart", rows, pad, w);
+      if (hoverIdx != null && probabilities[hoverIdx]) {
+        if (state.probabilityHoverIndex !== hoverIdx) {
+          state.probabilityHoverIndex = hoverIdx;
+          renderAttributionList();
+        }
+        const p = probabilities[hoverIdx];
+        drawHoverOverlay(ctx, "probabilityChart", rows, pad, w, h, x, y(Number(p.range_bound) || 0), [
+          `Range ${Math.round(Number(p.range_bound) || 0)}%`,
+          `Break higher ${Math.round(Number(p.break_higher) || 0)}%`,
+          `Rally ${Math.round(Number(p.rally_lower) || 0)}%`
+        ]);
+      } else if (state.probabilityHoverIndex !== null) {
+        state.probabilityHoverIndex = null;
+        renderAttributionList();
+      }
+      drawDateAxis(ctx, rows, x, h - 18);
+    }
+
+    function drawContributionHistoryChart() {
+      const canvas = document.getElementById("contributionHistoryChart");
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+      const w = rect.width;
+      const h = rect.height;
+      const pad = { left: 42, right: 18, top: 42, bottom: 42 };
+      const rows = rowsForRange().filter(row => row.factor_contributions);
+      const keys = ["technical", "inflation", "real_rate", "curve", "risk"];
+      const colors = {
+        technical: palette.ink,
+        inflation: palette.vermilion,
+        real_rate: palette.blue,
+        curve: palette.orange,
+        risk: palette.green
+      };
+      const labels = {
+        technical: "Technicals",
+        inflation: "Breakevens",
+        real_rate: "Real rates",
+        curve: "Curve",
+        risk: "Risk"
+      };
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, w, h);
+
+      if (!rows.length) {
+        ctx.fillStyle = "#66736d";
+        ctx.font = "12px Inter, system-ui, sans-serif";
+        ctx.fillText("Refresh data to populate contribution history", pad.left, h / 2);
+        return;
+      }
+
+      const values = rows.flatMap(row => keys.map(key => Number(row.factor_contributions?.[key]?.weighted_score)).filter(Number.isFinite));
+      const maxAbs = Math.max(...values.map(value => Math.abs(value)), 10);
+      const x = i => pad.left + (i / Math.max(1, rows.length - 1)) * (w - pad.left - pad.right);
+      const y = value => pad.top + (maxAbs - value) / (maxAbs * 2) * (h - pad.top - pad.bottom);
+
+      ctx.strokeStyle = palette.grid;
+      ctx.lineWidth = 1;
+      ctx.fillStyle = "#66736d";
+      ctx.font = "12px Inter, system-ui, sans-serif";
+      [-maxAbs, 0, maxAbs].forEach(value => {
+        const yy = y(value);
+        ctx.beginPath();
+        ctx.moveTo(pad.left, yy);
+        ctx.lineTo(w - pad.right, yy);
+        ctx.stroke();
+        ctx.fillText(`${Math.round(value)}`, 8, yy + 4);
+      });
+
+      keys.forEach(key => {
+        ctx.strokeStyle = colors[key];
+        ctx.lineWidth = key === "technical" ? 2.5 : 2;
+        ctx.beginPath();
+        rows.forEach((row, idx) => {
+          const value = Number(row.factor_contributions?.[key]?.weighted_score);
+          const yy = y(Number.isFinite(value) ? value : 0);
+          if (idx === 0) ctx.moveTo(x(idx), yy);
+          else ctx.lineTo(x(idx), yy);
+        });
+        ctx.stroke();
+      });
+
+      const legendGap = w < 720 ? 96 : 126;
+      keys.forEach((key, idx) => {
+        const lx = pad.left + (idx % 3) * legendGap;
+        const ly = 15 + Math.floor(idx / 3) * 14;
+        ctx.fillStyle = colors[key];
+        ctx.fillRect(lx, ly, 14, 4);
+        ctx.fillStyle = "#66736d";
+        ctx.fillText(labels[key], lx + 20, ly + 4);
+      });
+      const hoverIdx = hoverIndex("contributionHistoryChart", rows, pad, w);
+      if (hoverIdx != null && rows[hoverIdx]) {
+        const row = rows[hoverIdx];
+        drawHoverOverlay(ctx, "contributionHistoryChart", rows, pad, w, h, x, null, keys.map(key => {
+          const value = Number(row.factor_contributions?.[key]?.weighted_score);
+          return Number.isFinite(value) ? `${labels[key]} ${value > 0 ? "+" : ""}${Math.round(value)}` : null;
+        }));
+      }
+      drawDateAxis(ctx, rows, x, h - 16);
+    }
+
+    function drawIndicatorChart(canvasId, key, options = {}) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+      const w = rect.width;
+      const h = rect.height;
+      const pad = { left: 42, right: 18, top: 12, bottom: 38 };
+      const rows = rowsForRange();
+      const values = rows.map(row => Number(row[key])).map(v => Number.isFinite(v) ? v : null);
+      const valid = values.filter(v => v !== null);
+      const minValue = options.min ?? Math.min(...valid, 0);
+      const maxValue = options.max ?? Math.max(...valid, 1);
+      const x = i => pad.left + (i / Math.max(1, values.length - 1)) * (w - pad.left - pad.right);
+      const y = v => pad.top + (maxValue - v) / Math.max(0.0001, maxValue - minValue) * (h - pad.top - pad.bottom);
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = palette.grid;
+      ctx.lineWidth = 1;
+      ctx.fillStyle = "#66736d";
+      ctx.font = "12px Inter, system-ui, sans-serif";
+
+      (options.guides || []).forEach(guide => {
+        const yy = y(guide.value);
+        ctx.strokeStyle = guide.color || "#d8dfdb";
+        ctx.setLineDash(guide.dash ? [5, 5] : []);
+        ctx.beginPath();
+        ctx.moveTo(pad.left, yy);
+        ctx.lineTo(w - pad.right, yy);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = guide.color || "#66736d";
+        ctx.fillText(guide.label, 7, yy + 4);
+      });
+
+      if (!valid.length) {
+        ctx.fillStyle = "#66736d";
+        ctx.fillText("Refresh data to populate this indicator", pad.left, h / 2);
+        return;
+      }
+
+      ctx.strokeStyle = options.color || palette.purple;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      let started = false;
+      values.forEach((value, idx) => {
+        if (value === null) return;
+        if (!started) {
+          ctx.moveTo(x(idx), y(value));
+          started = true;
+        } else {
+          ctx.lineTo(x(idx), y(value));
+        }
+      });
+      ctx.stroke();
+      const hoverIdx = hoverIndex(canvasId, rows, pad, w);
+      if (hoverIdx != null && values[hoverIdx] !== null) {
+        drawHoverOverlay(ctx, canvasId, rows, pad, w, h, x, y(values[hoverIdx]), [
+          `${options.label || key} ${Number(values[hoverIdx]).toFixed(2)}`
+        ]);
+      }
+      drawDateAxis(ctx, rows, x, h - 15);
+    }
+
+    function drawMacdChart() {
+      const canvas = document.getElementById("macdChart");
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+      const w = rect.width;
+      const h = rect.height;
+      const pad = { left: 42, right: 18, top: 12, bottom: 38 };
+      const rows = rowsForRange();
+      const macd = rows.map(row => Number(row.macd)).map(v => Number.isFinite(v) ? v : null);
+      const signal = rows.map(row => Number(row.macd_signal)).map(v => Number.isFinite(v) ? v : null);
+      const valid = [...macd, ...signal].filter(v => v !== null);
+      if (!valid.length) {
+        drawIndicatorChart("macdChart", "macd", { color: palette.blue });
+        return;
+      }
+      const minValue = Math.min(...valid, -0.01);
+      const maxValue = Math.max(...valid, 0.01);
+      const x = i => pad.left + (i / Math.max(1, rows.length - 1)) * (w - pad.left - pad.right);
+      const y = v => pad.top + (maxValue - v) / Math.max(0.0001, maxValue - minValue) * (h - pad.top - pad.bottom);
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = "#d8dfdb";
+      ctx.beginPath();
+      ctx.moveTo(pad.left, y(0));
+      ctx.lineTo(w - pad.right, y(0));
+      ctx.stroke();
+
+      function line(values, color) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        let started = false;
+        values.forEach((value, idx) => {
+          if (value === null) return;
+          if (!started) {
+            ctx.moveTo(x(idx), y(value));
+            started = true;
+          } else {
+            ctx.lineTo(x(idx), y(value));
+          }
+        });
+        ctx.stroke();
+      }
+      line(macd, palette.blue);
+      line(signal, palette.orange);
+      const hoverIdx = hoverIndex("macdChart", rows, pad, w);
+      if (hoverIdx != null) {
+        const macdValue = macd[hoverIdx];
+        const signalValue = signal[hoverIdx];
+        drawHoverOverlay(ctx, "macdChart", rows, pad, w, h, x, macdValue === null ? null : y(macdValue), [
+          macdValue === null ? null : `MACD ${macdValue.toFixed(3)}`,
+          signalValue === null ? null : `Signal ${signalValue.toFixed(3)}`
+        ]);
+      }
+      drawDateAxis(ctx, rows, x, h - 15);
+    }
+
+    function drawTechnicalCharts() {
+      drawIndicatorChart("rsiChart", "rsi14", {
+        min: 0,
+        max: 100,
+        color: palette.purple,
+        label: "RSI",
+        guides: [
+          { value: 70, label: "70", color: palette.vermilion, dash: true },
+          { value: 50, label: "50", color: "#d8dfdb" },
+          { value: 30, label: "30", color: palette.green, dash: true }
+        ]
+      });
+      drawIndicatorChart("stochChart", "stoch14", {
+        min: 0,
+        max: 100,
+        color: palette.purple,
+        label: "Stochastic",
+        guides: [
+          { value: 80, label: "80", color: palette.vermilion, dash: true },
+          { value: 20, label: "20", color: palette.green, dash: true }
+        ]
+      });
+      drawMacdChart();
+      drawIndicatorChart("zscoreChart", "zscore63", {
+        color: palette.green,
+        label: "63d z-score",
+        guides: [
+          { value: 2, label: "+2", color: palette.vermilion, dash: true },
+          { value: 0, label: "0", color: "#d8dfdb" },
+          { value: -2, label: "-2", color: palette.green, dash: true }
+        ]
+      });
+    }
+
+    function renderTables() {
+      document.getElementById("changeLog").innerHTML = `
+        <div class="driver header">
+          <span>Metric</span>
+          <span>1-period</span>
+          <span>Current</span>
+          <span>Read-through</span>
+        </div>
+      ` + derivedChanges().map(item => `
+        <div class="driver">
+          <span class="driver-name">${item.name}</span>
+          <span class="driver-value">${item.value}</span>
+          <span class="driver-current">${item.current || "n/a"}</span>
+          <span class="driver-comment">
+            <span class="tag ${item.level}">${item.label}</span>
+            <span class="driver-detail">${item.detail}</span>
+          </span>
+        </div>
+      `).join("");
+      document.getElementById("hypothesisTable").innerHTML = hypotheses.map(row => `<tr><td><strong>${row[0]}</strong></td><td>${row[1]}</td><td>${row[2]}</td></tr>`).join("");
+      document.getElementById("alertTable").innerHTML = alerts.map(row => `<tr><td><strong>${row[0]}</strong></td><td>${row[1]}</td><td>${row[2]}</td></tr>`).join("");
+      renderFreshnessTable();
+      renderTrustCheck();
+      renderAuctionWatch();
+      renderContributionList();
+      renderCatalystWatch();
+      renderAttributionList();
+      renderBacktestTable();
+    }
+
+    function outcomeLabel(value) {
+      const labels = {
+        break_higher: "Break higher",
+        range_bound: "Range-bound",
+        rally_lower: "Rally lower"
+      };
+      return labels[value] || "n/a";
+    }
+
+    function latestContributionEntries() {
+      const latest = latestRow();
+      const contributions = latest?.factor_contributions || {};
+      return Object.entries(contributions).map(([key, value]) => ({ key, ...value }));
+    }
+
+    function renderContributionList() {
+      const host = document.getElementById("contributionList");
+      if (!host) return;
+      const latest = latestRow();
+      const entries = latestContributionEntries();
+      if (!entries.length) {
+        host.innerHTML = `<div class="table-note">Refresh data to populate factor contributions.</div>`;
+        return;
+      }
+      const maxAbs = Math.max(...entries.map(item => Math.abs(Number(item.weighted_score))), 1);
+      host.innerHTML = entries.map(item => {
+        const weighted = Number(item.weighted_score);
+        const score = Number(item.score);
+        const weight = Number(item.weight);
+        const pct = Math.min(50, Math.abs(weighted) / maxAbs * 50);
+        const left = weighted >= 0 ? 50 : 50 - pct;
+        const color = weighted > 0 ? "var(--red)" : weighted < 0 ? "var(--green)" : "var(--blue)";
+        const direction = weighted > 0 ? "higher-yield pressure" : weighted < 0 ? "lower-yield pressure" : "neutral";
+        const tip = `${item.label}: model score ${score > 0 ? "+" : ""}${score} x weight ${weight} = weighted score ${weighted > 0 ? "+" : ""}${weighted}. The centered bar shows direction and relative size versus today's largest factor contribution; ${direction}.`;
+        return `
+          <div class="contribution" tabindex="0" data-tip="${escapeHtml(tip)}">
+            <strong>${item.label}</strong>
+            <div class="contribution-track">
+              <span class="contribution-bar" style="--left:${left}%; --width:${pct}%; background:${color}"></span>
+            </div>
+            <span>${weighted > 0 ? "+" : ""}${weighted}</span>
+          </div>
+        `;
+      }).join("");
+      const impulse = Number(latest?.model_impulse);
+      const tag = document.getElementById("modelImpulseTag");
+      if (tag) tag.textContent = Number.isFinite(impulse) ? `impulse ${impulse.toFixed(2)}` : "model impulse";
+    }
+
+    function average(values) {
+      const valid = values.map(Number).filter(Number.isFinite);
+      if (!valid.length) return null;
+      return valid.reduce((sum, value) => sum + value, 0) / valid.length;
+    }
+
+    function formatCatalystValue(value, kind) {
+      if (!Number.isFinite(value)) return "n/a";
+      if (kind === "yield" || kind === "spread") return `${value.toFixed(2)}%`;
+      if (kind === "bp") return `${Math.round(value * 100)} bp`;
+      if (kind === "usd") return `$${value.toFixed(0)}`;
+      return value.toFixed(1);
+    }
+
+    function renderCatalystWatch() {
+      const host = document.getElementById("catalystWatch");
+      if (!host) return;
+      const rows = rowsForRange();
+      if (!state.dashboardData || rows.length < 6) {
+        host.innerHTML = `<div class="table-note">Refresh data to populate catalyst direction.</div>`;
+        return;
+      }
+      const latest = rows[rows.length - 1];
+      const priorFive = rows.slice(-6, -1);
+      const items = [
+        { label: "30Y yield", key: "dgs30", kind: "yield", higher: "higher" },
+        { label: "10s30s curve", key: "curve_10s30s", kind: "bp", higher: "higher" },
+        { label: "Breakevens", key: "t10yie", kind: "yield", higher: "higher" },
+        { label: "MOVE", key: "move", kind: "index", higher: "lower" },
+        { label: "HY OAS", key: "hy_oas", kind: "spread", higher: "lower" },
+        { label: "DXY", key: "dxy", kind: "index", higher: "mixed" },
+        { label: "Gold", key: "gold", kind: "usd", higher: "mixed" },
+        { label: "VIX", key: "vix", kind: "index", higher: "lower" },
+        { label: "WTI crude", key: "oil", kind: "usd", higher: "higher" }
+      ];
+      host.innerHTML = items.map(item => {
+        const latestValue = Number(latest[item.key]);
+        const avgValue = average(priorFive.map(row => row[item.key]));
+        const delta = Number.isFinite(latestValue) && Number.isFinite(avgValue) ? latestValue - avgValue : null;
+        const flatBand = item.kind === "bp" ? 0.02 : item.kind === "yield" || item.kind === "spread" ? 0.03 : item.kind === "usd" ? 1.5 : 0.8;
+        const direction = delta == null || Math.abs(delta) < flatBand ? "flat" : delta > 0 ? "up" : "down";
+        const arrow = direction === "up" ? "↗" : direction === "down" ? "↘" : "→";
+        const pressure = direction === "flat"
+          ? "sideways"
+          : item.higher === "mixed"
+            ? "cross-market pressure to review"
+          : item.higher === "higher"
+            ? (direction === "up" ? "higher-yield pressure" : "lower-yield pressure")
+            : (direction === "up" ? "lower-yield pressure" : "higher-yield pressure");
+        const deltaText = delta == null ? "n/a" : `${delta > 0 ? "+" : ""}${formatCatalystValue(delta, item.kind)}`;
+        return `
+          <div class="catalyst-item" title="${escapeHtml(`Latest ${formatCatalystValue(latestValue, item.kind)} versus prior 5-period average ${formatCatalystValue(avgValue, item.kind)}; ${pressure}.`)}">
+            <span class="arrow ${direction}">${arrow}</span>
+            <span class="catalyst-name">${item.label}</span>
+            <span class="catalyst-meta">${deltaText}</span>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function formatPointDelta(value) {
+      if (!Number.isFinite(value)) return "n/a";
+      const rounded = Math.round(value);
+      return `${rounded > 0 ? "+" : ""}${rounded} pts`;
+    }
+
+    function formatWeightedDelta(value) {
+      if (!Number.isFinite(value)) return "n/a";
+      const rounded = Math.round(value);
+      return `${rounded > 0 ? "+" : ""}${rounded}`;
+    }
+
+    function formatAbsWeightedDelta(value) {
+      if (!Number.isFinite(value)) return "n/a";
+      return `${Math.round(Math.abs(value))}`;
+    }
+
+    function contributionEntriesForRow(row) {
+      const contributions = row?.factor_contributions || {};
+      return Object.entries(contributions).map(([key, value]) => ({ key, ...value }));
+    }
+
+    function formatBn(value) {
+      const num = Number(value);
+      return Number.isFinite(num) ? `$${num.toFixed(num >= 10 ? 0 : 1)}bn` : "n/a";
+    }
+
+    function formatNumber(value, decimals = 2) {
+      const num = Number(value);
+      return Number.isFinite(num) ? num.toFixed(decimals) : "n/a";
+    }
+
+    function formatBp(value) {
+      const num = Number(value);
+      return Number.isFinite(num) ? `${num > 0 ? "+" : ""}${num.toFixed(1)} bp` : "n/a";
+    }
+
+    function auctionLabel(item) {
+      if (!item) return "n/a";
+      return [item.security_term, item.security_type].filter(Boolean).join(" ");
+    }
+
+    function renderAuctionWatch() {
+      const grid = document.getElementById("auctionGrid");
+      const table = document.getElementById("upcomingAuctionTable");
+      const status = document.getElementById("auctionStatus");
+      if (!grid || !table) return;
+      const auctions = state.dashboardData?.auctions;
+      const latest = auctions?.latest_long_end;
+      if (!auctions || !latest) {
+        grid.innerHTML = `
+          <div class="auction-metric" style="grid-column:1/-1">
+            <span>Source gap</span>
+            <strong>Not loaded</strong>
+            <small class="table-note">Run the refresh script when network access is available to populate TreasuryDirect auction context.</small>
+          </div>
+        `;
+        table.innerHTML = `<tr><td>n/a</td><td>n/a</td><td>n/a</td><td>TreasuryDirect data not loaded in the current cache.</td></tr>`;
+        if (status) {
+          status.textContent = "source gap";
+          status.className = "tag amber";
+        }
+        return;
+      }
+      const btcChange = auctions.bid_to_cover_change;
+      const yieldChange = auctions.high_yield_change_bp;
+      const dealerShare = Number(latest.primary_dealer_share);
+      const dealerTag = Number.isFinite(dealerShare) && dealerShare > 20 ? "dealer take-up elevated" : "dealer take-up contained";
+      grid.innerHTML = `
+        <div class="auction-metric">
+          <span>Latest auction</span>
+          <strong>${auctionLabel(latest)}</strong>
+          <small class="table-note">${latest.auction_date || "date n/a"}</small>
+        </div>
+        <div class="auction-metric">
+          <span>Bid-to-cover</span>
+          <strong>${formatNumber(latest.bid_to_cover)}</strong>
+          <small class="table-note">${formatNumber(btcChange)} versus prior same term</small>
+        </div>
+        <div class="auction-metric">
+          <span>High yield</span>
+          <strong>${formatNumber(latest.high_yield, 3)}%</strong>
+          <small class="table-note">${formatBp(yieldChange)} versus prior same term</small>
+        </div>
+        <div class="auction-metric">
+          <span>Dealer share</span>
+          <strong>${formatNumber(latest.primary_dealer_share, 1)}%</strong>
+          <small class="table-note">${dealerTag}</small>
+        </div>
+      `;
+      const upcoming = auctions.upcoming_long_end || [];
+      table.innerHTML = upcoming.length
+        ? upcoming.map(item => `
+            <tr>
+              <td><strong>${auctionLabel(item)}</strong></td>
+              <td>${item.auction_date || "n/a"}</td>
+              <td>${formatBn(item.offering_amount_bn)}</td>
+              <td>${item.reopening === "Yes" ? "Reopening" : "New issue or unspecified"}; ${item.issue_date || "issue date n/a"}</td>
+            </tr>
+          `).join("")
+        : `<tr><td>No upcoming long-end auctions in cache</td><td>n/a</td><td>n/a</td><td>Check TreasuryDirect upcoming auctions.</td></tr>`;
+      if (status) {
+        status.textContent = "loaded";
+        status.className = "tag green";
+      }
+    }
+
+    function renderAttributionList() {
+      const host = document.getElementById("attributionList");
+      if (!host) return;
+      const rows = rowsForRange();
+      if (!state.dashboardData || rows.length < 2) {
+        host.innerHTML = `<div class="table-note">Refresh data to compare probability and factor changes.</div>`;
+        return;
+      }
+      const selectedIdx = state.probabilityHoverIndex == null ? rows.length - 1 : clamp(state.probabilityHoverIndex, 1, rows.length - 1);
+      const latest = rows[selectedIdx];
+      const prior = rows[selectedIdx - 1];
+      const attributionTag = document.getElementById("attributionWindow");
+      if (attributionTag) {
+        attributionTag.textContent = state.probabilityHoverIndex == null
+          ? (state.range === "daily" ? "since prior session" : state.range === "weekly" ? "since prior week" : "since prior month")
+          : `${formatDateTick(latest.date)} vs prior`;
+      }
+      const latestProbs = latest.probabilities || {};
+      const priorProbs = prior.probabilities || {};
+      const probabilityMoves = scenarios.map(s => ({
+        label: s.name,
+        color: s.color,
+        delta: Number(latestProbs[s.id]) - Number(priorProbs[s.id])
+      })).sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+      const contributionMoves = contributionEntriesForRow(latest).map(item => {
+        const priorContribution = prior.factor_contributions?.[item.key]?.weighted_score;
+        return {
+          label: item.label,
+          delta: Number(item.weighted_score) - Number(priorContribution),
+          latest: Number(item.weighted_score)
+        };
+      }).filter(item => Number.isFinite(item.delta)).sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+
+      function strongestContribution(direction) {
+        if (!contributionMoves.length) return null;
+        const sorted = [...contributionMoves].sort((a, b) => direction === "higher" ? b.delta - a.delta : a.delta - b.delta);
+        return sorted[0];
+      }
+
+      function scenarioAttribution(scenarioId, probabilityDelta) {
+        if (!contributionMoves.length) return "No material contribution change available";
+        if (scenarioId === "break_higher") {
+          const driver = strongestContribution(probabilityDelta >= 0 ? "higher" : "lower");
+          return probabilityDelta >= 0
+            ? `${driver.label} added ${formatWeightedDelta(driver.delta)} higher-yield pressure`
+            : `${driver.label} removed ${formatAbsWeightedDelta(driver.delta)} higher-yield pressure`;
+        }
+        if (scenarioId === "rally_lower") {
+          const driver = strongestContribution(probabilityDelta >= 0 ? "lower" : "higher");
+          return probabilityDelta >= 0
+            ? `${driver.label} added ${formatAbsWeightedDelta(driver.delta)} lower-yield pressure`
+            : `${driver.label} reduced lower-yield support by ${formatAbsWeightedDelta(driver.delta)}`;
+        }
+        const latestImpulse = Math.abs(Number(latest.model_impulse));
+        const priorImpulse = Math.abs(Number(prior.model_impulse));
+        if (Number.isFinite(latestImpulse) && Number.isFinite(priorImpulse)) {
+          const neutralMove = priorImpulse - latestImpulse;
+          if (neutralMove > 0) return `Net impulse moved ${neutralMove.toFixed(2)} closer to neutral`;
+          if (neutralMove < 0) return `Net impulse moved ${Math.abs(neutralMove).toFixed(2)} away from neutral`;
+        }
+        const driver = contributionMoves[0];
+        return `${driver.label} contribution changed ${formatWeightedDelta(driver.delta)}`;
+      }
+
+      host.innerHTML = probabilityMoves.map(move => {
+        const direction = move.delta > 0 ? "up" : move.delta < 0 ? "down" : "flat";
+        const scenario = scenarios.find(item => item.name === move.label);
+        const driverText = scenario ? scenarioAttribution(scenario.id, move.delta) : "No material contribution change available";
+        return `
+          <div class="attribution-item">
+            <strong>${move.label}</strong>
+            <span class="delta ${direction}">${formatPointDelta(move.delta)}</span>
+            <span class="table-note">${driverText}</span>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function renderBacktestTable() {
+      const host = document.getElementById("backtestTable");
+      if (!host) return;
+      const backtest = state.dashboardData?.backtest;
+      if (!backtest) {
+        host.innerHTML = `<tr><td>n/a</td><td>n/a</td><td>n/a</td><td>Refresh data to populate outcome checks.</td><td>n/a</td></tr>`;
+        return;
+      }
+      const horizons = backtest.horizons || { "20d": backtest };
+      const order = ["10d", "20d", "60d"].filter(key => horizons[key]);
+      const scope = document.getElementById("backtestScope");
+      if (scope) scope.textContent = order.length > 1 ? "10 / 20 / 60 trading days" : `${backtest.horizon}, ${backtest.threshold}`;
+      host.innerHTML = order.map(key => {
+        const item = horizons[key];
+        const latest = item.latest_evaluable || {};
+        const latestMove = latest.forward_change_bp ?? latest.forward_20d_change_bp;
+        const latestText = latest.date
+          ? `${latest.date}: predicted ${outcomeLabel(latest.predicted)}, actual ${outcomeLabel(latest.actual)} (${latestMove} bp)`
+          : "n/a";
+        const buckets = Object.entries(item.by_prediction || {})
+          .map(([name, stats]) => {
+            const count = Number(stats.count);
+            const hits = Number(stats.hits);
+            const rate = count ? Math.round(hits / count * 100) : null;
+            return `${outcomeLabel(name)} ${rate == null ? "n/a" : `${rate}%`} (${count})`;
+          })
+          .join("<br>");
+        return `
+          <tr>
+            <td><strong>${item.horizon}</strong><br><span class="table-note">${item.window}, ${item.threshold}</span></td>
+            <td>${item.sample_size}</td>
+            <td>${item.accuracy_pct == null ? "n/a" : `${item.accuracy_pct}%`}</td>
+            <td>${latestText}</td>
+            <td>${buckets || "n/a"}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function renderFreshnessTable() {
+      const host = document.getElementById("freshnessTable");
+      if (!host) return;
+      const metadata = state.dashboardData?.metadata;
+      const latest = latestRow();
+      if (!metadata || !latest) {
+        host.innerHTML = `<tr><td>Dashboard data</td><td>n/a</td><td>Sample fallback</td><td><span class="tag amber">not refreshed</span></td></tr>`;
+        return;
+      }
+      const seriesEntries = [
+        ["dgs30", "30Y Treasury", latest.dgs30, metadata.series?.dgs30?.source],
+        ["dfii30", "30Y real yield", latest.dfii30, metadata.series?.dfii30?.source],
+        ["t10yie", "10Y breakeven", latest.t10yie, metadata.series?.t10yie?.source],
+        ["hy_oas", "High yield OAS", latest.hy_oas, metadata.series?.hy_oas?.source],
+        ["spx", "S&P 500", latest.spx, metadata.market_series?.spx?.source],
+        ["tlt", "TLT", latest.tlt, metadata.market_series?.tlt?.source],
+        ["dxy", "Dollar index", latest.dxy, metadata.market_series?.dxy?.source],
+        ["gold", "Gold futures", latest.gold, metadata.market_series?.gold?.source],
+        ["move", "MOVE index", latest.move, metadata.market_series?.move?.source],
+        ["treasurydirect_auctions", "Treasury auctions", state.dashboardData?.auctions?.latest_long_end, metadata.auction_source]
+      ];
+      host.innerHTML = seriesEntries.map(([key, name, value, source]) => {
+        const ok = key === "treasurydirect_auctions" ? Boolean(value) : Number.isFinite(Number(value));
+        const latestDate = key === "treasurydirect_auctions"
+          ? state.dashboardData?.auctions?.latest_long_end?.auction_date
+          : metadata.latest_by_series?.[key] || metadata.latest_date;
+        return `<tr><td><strong>${name}</strong></td><td>${ok ? latestDate : "missing"}</td><td>${source || "n/a"}</td><td><span class="tag ${ok ? "green" : "amber"}">${ok ? "loaded" : "gap"}</span></td></tr>`;
+      }).join("");
+    }
+
+    function daysSinceDate(dateText) {
+      if (!dateText) return null;
+      const parsed = new Date(`${dateText}T00:00:00Z`);
+      if (Number.isNaN(parsed.getTime())) return null;
+      const now = new Date();
+      return Math.floor((Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) - parsed.getTime()) / 86400000);
+    }
+
+    function trustTag(level) {
+      if (level === "ok") return "green";
+      if (level === "risk") return "red";
+      return "amber";
+    }
+
+    function renderTrustCheck() {
+      const host = document.getElementById("trustList");
+      const status = document.getElementById("trustStatus");
+      if (!host) return;
+      const metadata = state.dashboardData?.metadata;
+      const rows = rowsForRange();
+      const latest = rows[rows.length - 1];
+      if (!metadata || !latest) {
+        host.innerHTML = `<div class="table-note">Refresh data to populate source and model stability checks.</div>`;
+        if (status) {
+          status.textContent = "sample data";
+          status.className = "tag amber";
+        }
+        return;
+      }
+
+      const latestAge = daysSinceDate(metadata.latest_date);
+      const sourceGaps = Object.keys(metadata.source_gaps || {});
+      const requiredKeys = ["dgs30", "dfii30", "t10yie", "hy_oas", "spx", "tlt", "dxy"];
+      const missing = requiredKeys.filter(key => !Number.isFinite(Number(latest[key])));
+      const probabilities = latest.probabilities || {};
+      const sortedProbs = Object.entries(probabilities).sort((a, b) => Number(b[1]) - Number(a[1]));
+      const topMargin = sortedProbs.length > 1 ? Number(sortedProbs[0][1]) - Number(sortedProbs[1][1]) : 0;
+      const prior = rows.length > 2 ? rows[rows.length - 2] : null;
+      const churn = prior?.probabilities
+        ? Object.keys(probabilities).reduce((sum, key) => sum + Math.abs(Number(probabilities[key]) - Number(prior.probabilities[key])), 0)
+        : 0;
+      const scores = Object.values(latest.factor_scores || {}).map(Number).filter(Number.isFinite);
+      const positiveScores = scores.filter(value => value > 0).length;
+      const negativeScores = scores.filter(value => value < 0).length;
+      const dispersion = Number(latest.model_dispersion);
+      const horizons = state.dashboardData?.backtest?.horizons || {};
+      const horizonRates = Object.values(horizons).map(item => Number(item.accuracy_pct)).filter(Number.isFinite);
+      const horizonSpread = horizonRates.length ? Math.max(...horizonRates) - Math.min(...horizonRates) : null;
+
+      const checks = [
+        {
+          label: "Freshness",
+          level: latestAge == null || latestAge > 7 ? "risk" : latestAge > 4 ? "watch" : "ok",
+          text: latestAge == null ? "Latest source date unavailable." : `Latest source date is ${metadata.latest_date}, ${latestAge} calendar days old.`
+        },
+        {
+          label: "Coverage",
+          level: sourceGaps.length || missing.length ? "risk" : "ok",
+          text: sourceGaps.length || missing.length
+            ? `${sourceGaps.length} refresh gap(s), ${missing.length} missing key field(s).`
+            : "Core yield, real-rate, inflation, credit, equity, duration, and dollar fields are loaded."
+        },
+        {
+          label: "Signal Margin",
+          level: topMargin < 8 ? "watch" : "ok",
+          text: sortedProbs.length ? `${outcomeLabel(sortedProbs[0][0])} leads by ${Math.round(topMargin)} percentage points.` : "Scenario probabilities unavailable."
+        },
+        {
+          label: "Churn",
+          level: churn > 18 ? "risk" : churn > 10 ? "watch" : "ok",
+          text: `Total scenario-probability movement versus the prior period is ${Math.round(churn)} points.`
+        },
+        {
+          label: "Factor Conflict",
+          level: positiveScores && negativeScores && dispersion > 0.9 ? "watch" : "ok",
+          text: `${positiveScores} factor(s) push higher yields, ${negativeScores} push lower yields.`
+        },
+        {
+          label: "Calibration",
+          level: horizonSpread == null ? "watch" : horizonSpread > 20 ? "watch" : "ok",
+          text: horizonSpread == null ? "Multi-horizon diagnostics unavailable." : `10/20/60d hit-rate spread is ${horizonSpread.toFixed(1)} points.`
+        }
+      ];
+
+      const worst = checks.some(item => item.level === "risk") ? "risk" : checks.some(item => item.level === "watch") ? "watch" : "ok";
+      if (status) {
+        status.textContent = worst === "ok" ? "signal usable" : worst === "risk" ? "verify before using" : "use with caution";
+        status.className = `tag ${trustTag(worst)}`;
+      }
+      host.innerHTML = checks.map(item => `
+        <div class="trust-item">
+          <span class="tag ${trustTag(item.level)}">${item.label}</span>
+          <span>${item.text}</span>
+        </div>
+      `).join("");
+    }
+
+    function renderControls() {
+      const host = document.getElementById("controls");
+      host.innerHTML = "";
+      state.factors.forEach(f => {
+        const row = document.createElement("div");
+        row.className = "control-row";
+        row.innerHTML = `<label for="score-${f.id}">${f.name} score (-2 lower yields, +2 higher yields)</label><input id="score-${f.id}" type="number" min="-2" max="2" step="1" value="${f.score}">`;
+        host.appendChild(row);
+        row.querySelector("input").addEventListener("input", e => {
+          f.score = clamp(Number(e.target.value), -2, 2);
+          renderAll();
+        });
+      });
+      renderModelOutput();
+    }
+
+    function renderModelOutput() {
+      const probs = activeProbabilities();
+      const entries = contributionEntriesForRow(latestRow());
+      const biggest = entries.length
+        ? entries.sort((a, b) => Math.abs(Number(b.weighted_score)) - Math.abs(Number(a.weighted_score)))[0]
+        : [...state.factors].sort((a, b) => Math.abs(b.score * b.weight) - Math.abs(a.score * a.weight))[0];
+      const driverName = biggest.label || biggest.name;
+      document.getElementById("modelOutput").innerHTML = scenarios.map(s => `<tr><td><strong>${s.name}</strong></td><td>${probs[s.id]}%</td><td>${driverName}</td></tr>`).join("");
+    }
+
+    function renderAll() {
+      renderHeader();
+      renderFactors();
+      renderScenarios();
+      drawChart();
+      drawProbabilityChart();
+      drawContributionHistoryChart();
+      drawTechnicalCharts();
+      renderTables();
+      renderModelOutput();
+    }
+
+    function decoratePanelInfo() {
+      document.querySelectorAll(".panel-header").forEach(header => {
+        if (header.dataset.infoDecorated) return;
+        const title = header.querySelector(".panel-title")?.textContent?.trim();
+        const tip = panelInfo[title];
+        if (!tip) return;
+        let actions = header.querySelector(".panel-actions");
+        if (!actions) {
+          actions = document.createElement("div");
+          actions.className = "panel-actions";
+          [...header.children].slice(1).forEach(child => actions.appendChild(child));
+          header.appendChild(actions);
+        }
+        const dot = document.createElement("span");
+        dot.className = "info-dot";
+        dot.tabIndex = 0;
+        dot.textContent = "i";
+        dot.setAttribute("aria-label", `${title} explanation`);
+        dot.dataset.tip = tip;
+        actions.appendChild(dot);
+        header.dataset.infoDecorated = "true";
+      });
+    }
+
+    function setupChartHover() {
+      bindChartHover("yieldChart", drawChart);
+      bindChartHover("probabilityChart", drawProbabilityChart);
+      bindChartHover("contributionHistoryChart", drawContributionHistoryChart);
+      bindChartHover("rsiChart", drawTechnicalCharts);
+      bindChartHover("stochChart", drawTechnicalCharts);
+      bindChartHover("macdChart", drawTechnicalCharts);
+      bindChartHover("zscoreChart", drawTechnicalCharts);
+    }
+
+    async function loadDashboardData() {
+      try {
+        const response = await fetch("data/rates_dashboard_data.json", { cache: "no-store" });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        state.dashboardData = await response.json();
+      } catch (error) {
+        state.dashboardData = null;
+      }
+      renderAll();
+    }
+
+    document.querySelectorAll(".nav-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById("dashboardView").classList.toggle("hidden", btn.dataset.view !== "dashboard");
+        ["review", "calibration", "sources"].forEach(id => {
+          document.getElementById(`${id}View`).classList.toggle("active", btn.dataset.view === id);
+        });
+      });
+    });
+
+    document.querySelectorAll(".seg-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".seg-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        state.range = btn.dataset.range;
+        renderAll();
+      });
+    });
+
+    document.getElementById("refreshBtn").addEventListener("click", renderAll);
+    document.getElementById("notes").value = state.notes;
+    document.getElementById("notes").addEventListener("input", e => {
+      localStorage.setItem("thirtyYearYieldNotes", e.target.value);
+      document.getElementById("saveStatus").textContent = "saved locally";
+    });
+
+    window.addEventListener("resize", () => {
+      drawChart();
+      drawProbabilityChart();
+      drawContributionHistoryChart();
+      drawTechnicalCharts();
+    });
+    decoratePanelInfo();
+    setupChartHover();
+    renderControls();
+    loadDashboardData();
+  </script>
+</body>
+</html>
