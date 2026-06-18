@@ -229,7 +229,7 @@
     }
 
     .overview-grid {
-      grid-template-columns: minmax(280px, 1.15fr) repeat(3, minmax(170px, 0.7fr));
+      grid-template-columns: minmax(320px, 1.15fr) repeat(3, minmax(170px, 0.7fr));
       align-items: stretch;
     }
 
@@ -239,6 +239,7 @@
       border-radius: 8px;
       box-shadow: var(--shadow);
       min-width: 0;
+      overflow: hidden;
     }
 
     .panel.pad {
@@ -248,6 +249,7 @@
     .outlook {
       display: grid;
       gap: 14px;
+      min-width: 0;
     }
 
     .outlook-head {
@@ -255,6 +257,8 @@
       justify-content: space-between;
       gap: 14px;
       align-items: flex-start;
+      flex-wrap: wrap;
+      min-width: 0;
     }
 
     .status-pill, .tag, .impact {
@@ -268,6 +272,7 @@
       font-weight: 650;
       white-space: nowrap;
       max-width: 100%;
+      min-width: 0;
     }
 
     .status-pill.range { background: var(--amber-soft); color: #714200; }
@@ -295,6 +300,7 @@
       color: var(--muted);
       line-height: 1.45;
       max-width: 66ch;
+      overflow-wrap: anywhere;
     }
 
     .kpi {
@@ -322,12 +328,18 @@
       color: var(--muted);
       font-size: 13px;
       line-height: 1.4;
+      overflow-wrap: anywhere;
     }
 
     .content-grid {
       margin-top: 14px;
       grid-template-columns: minmax(0, 1.6fr) minmax(310px, 0.9fr);
       align-items: start;
+    }
+
+    .chart-column,
+    .right-column {
+      grid-template-rows: auto auto;
     }
 
     .chart-column {
@@ -541,7 +553,7 @@
 
     .scenario-panel .scenario-list {
       flex: 1;
-      align-content: stretch;
+      align-content: space-between;
     }
 
     .scenario {
@@ -745,7 +757,9 @@
       gap: 9px;
       align-items: center;
       border-bottom: 1px solid var(--line);
-      padding-bottom: 8px;
+      border-left: 3px solid transparent;
+      border-radius: 6px;
+      padding: 6px 6px 8px;
       font-size: 12px;
       min-width: 0;
     }
@@ -761,7 +775,24 @@
       font-weight: 760;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      padding-bottom: 7px;
+      padding: 0 6px 7px;
+      border-left: 3px solid transparent;
+      border-radius: 0;
+    }
+
+    .catalyst-row.near {
+      background: #fff8ed;
+      border-left-color: var(--amber);
+    }
+
+    .catalyst-row.breach {
+      background: #fff0ed;
+      border-left-color: var(--red);
+    }
+
+    .catalyst-row.large-move:not(.near):not(.breach) {
+      background: #eef7fb;
+      border-left-color: var(--blue);
     }
 
     .arrow {
@@ -812,6 +843,30 @@
       justify-content: flex-end;
       gap: 6px;
       min-width: 0;
+    }
+
+    .catalyst-signal {
+      border-radius: 999px;
+      padding: 2px 6px;
+      font-size: 10.5px;
+      font-weight: 760;
+      line-height: 1.1;
+      white-space: nowrap;
+    }
+
+    .catalyst-signal.near {
+      background: var(--amber-soft);
+      color: var(--amber);
+    }
+
+    .catalyst-signal.breach {
+      background: var(--red-soft);
+      color: var(--red);
+    }
+
+    .catalyst-signal.large {
+      background: var(--blue-soft);
+      color: var(--blue);
     }
 
     .workflow-item {
@@ -1032,6 +1087,12 @@
       .overview-grid, .content-grid, .two-col, .review-grid {
         grid-template-columns: 1fr;
       }
+      .overview-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .outlook {
+        grid-column: 1 / -1;
+      }
       .scenario-panel {
         min-height: auto;
       }
@@ -1056,6 +1117,9 @@
       main { padding: 14px; }
       aside { padding: 18px 14px; }
       nav { grid-template-columns: 1fr 1fr; }
+      .overview-grid {
+        grid-template-columns: 1fr;
+      }
       .factor-grid { grid-template-columns: 1fr; }
       .auction-grid { grid-template-columns: 1fr; }
       .contribution {
@@ -1090,6 +1154,9 @@
       }
       .catalyst-change {
         justify-content: flex-end;
+      }
+      .catalyst-signal {
+        display: none;
       }
       .driver .driver-value {
         text-align: left;
@@ -2500,6 +2567,20 @@
       return value.toFixed(1);
     }
 
+    function catalystSignal(item, latestValue, delta, flatBand) {
+      const largeMove = Number.isFinite(delta) && Math.abs(delta) >= flatBand * 3;
+      if (!Number.isFinite(latestValue) || !Number.isFinite(item.threshold)) {
+        return largeMove ? { rowClass: "large-move", labelClass: "large", label: "large move" } : { rowClass: "", labelClass: "", label: "" };
+      }
+      const distance = item.threshold === 0 ? Infinity : Math.abs(latestValue - item.threshold) / Math.abs(item.threshold);
+      const breached = item.direction === "above" ? latestValue >= item.threshold : latestValue <= item.threshold;
+      const near = !breached && distance <= item.nearPct;
+      if (breached) return { rowClass: "breach", labelClass: "breach", label: "through" };
+      if (near) return { rowClass: "near", labelClass: "near", label: "near" };
+      if (largeMove) return { rowClass: "large-move", labelClass: "large", label: "large move" };
+      return { rowClass: "", labelClass: "", label: "" };
+    }
+
     function renderCatalystWatch() {
       const host = document.getElementById("catalystWatch");
       if (!host) return;
@@ -2511,15 +2592,15 @@
       const latest = rows[rows.length - 1];
       const priorFive = rows.slice(-6, -1);
       const items = [
-        { label: "30Y yield", key: "dgs30", kind: "yield", higher: "higher", keyLevel: "5.00%" },
-        { label: "10s30s curve", key: "curve_10s30s", kind: "bp", higher: "higher", keyLevel: "+25 bp" },
-        { label: "Breakevens", key: "t10yie", kind: "yield", higher: "higher", keyLevel: "2.35%" },
-        { label: "MOVE", key: "move", kind: "index", higher: "lower", keyLevel: "120" },
-        { label: "HY OAS", key: "hy_oas", kind: "spread", higher: "lower", keyLevel: "4.50%" },
+        { label: "30Y yield", key: "dgs30", kind: "yield", higher: "higher", keyLevel: "5.00%", threshold: 5.00, direction: "above", nearPct: 0.025 },
+        { label: "10s30s curve", key: "curve_10s30s", kind: "bp", higher: "higher", keyLevel: "+25 bp", threshold: 0.25, direction: "above", nearPct: 0.20 },
+        { label: "Breakevens", key: "t10yie", kind: "yield", higher: "higher", keyLevel: "2.35%", threshold: 2.35, direction: "above", nearPct: 0.035 },
+        { label: "MOVE", key: "move", kind: "index", higher: "lower", keyLevel: "120", threshold: 120, direction: "above", nearPct: 0.10 },
+        { label: "HY OAS", key: "hy_oas", kind: "spread", higher: "lower", keyLevel: "4.50%", threshold: 4.50, direction: "above", nearPct: 0.10 },
         { label: "DXY", key: "dxy", kind: "index", higher: "mixed", keyLevel: "Watch" },
         { label: "Gold", key: "gold", kind: "usd", higher: "mixed", keyLevel: "Watch" },
-        { label: "VIX", key: "vix", kind: "index", higher: "lower", keyLevel: "25" },
-        { label: "WTI crude", key: "oil", kind: "usd", higher: "higher", keyLevel: "$90" }
+        { label: "VIX", key: "vix", kind: "index", higher: "lower", keyLevel: "25", threshold: 25, direction: "above", nearPct: 0.12 },
+        { label: "WTI crude", key: "oil", kind: "usd", higher: "higher", keyLevel: "$90", threshold: 90, direction: "above", nearPct: 0.08 }
       ];
       const header = `
         <div class="catalyst-row header" aria-hidden="true">
@@ -2536,6 +2617,7 @@
         const flatBand = item.kind === "bp" ? 0.02 : item.kind === "yield" || item.kind === "spread" ? 0.03 : item.kind === "usd" ? 1.5 : 0.8;
         const direction = delta == null || Math.abs(delta) < flatBand ? "flat" : delta > 0 ? "up" : "down";
         const arrow = direction === "up" ? "↗" : direction === "down" ? "↘" : "→";
+        const signal = catalystSignal(item, latestValue, delta, flatBand);
         const pressure = direction === "flat"
           ? "sideways"
           : item.higher === "mixed"
@@ -2545,11 +2627,15 @@
             : (direction === "up" ? "lower-yield pressure" : "higher-yield pressure");
         const deltaText = delta == null ? "n/a" : `${delta > 0 ? "+" : ""}${formatCatalystValue(delta, item.kind)}`;
         return `
-          <div class="catalyst-row" title="${escapeHtml(`Latest ${formatCatalystValue(latestValue, item.kind)} versus prior 5-period average ${formatCatalystValue(avgValue, item.kind)}; ${pressure}.`)}">
+          <div class="catalyst-row ${signal.rowClass}" title="${escapeHtml(`Latest ${formatCatalystValue(latestValue, item.kind)} versus prior 5-period average ${formatCatalystValue(avgValue, item.kind)}; ${pressure}.`)}">
             <span class="catalyst-name">${item.label}</span>
             <span class="catalyst-level">${item.keyLevel}</span>
             <span class="catalyst-last">${formatCatalystValue(latestValue, item.kind)}</span>
-            <span class="catalyst-change"><span class="arrow ${direction}">${arrow}</span><span class="catalyst-meta">${deltaText}</span></span>
+            <span class="catalyst-change">
+              ${signal.label ? `<span class="catalyst-signal ${signal.labelClass}">${signal.label}</span>` : ""}
+              <span class="arrow ${direction}">${arrow}</span>
+              <span class="catalyst-meta">${deltaText}</span>
+            </span>
           </div>
         `;
       }).join("");
