@@ -913,12 +913,12 @@
 
     .driver {
       display: grid;
-      grid-template-columns: minmax(145px, 0.85fr) minmax(78px, 0.42fr) minmax(145px, 0.9fr) minmax(260px, 1.35fr);
-      gap: 14px;
+      grid-template-columns: minmax(110px, 0.68fr) minmax(56px, 0.25fr) minmax(120px, 0.62fr) minmax(390px, 2.35fr);
+      gap: 10px;
       align-items: center;
       border: 1px solid transparent;
       border-bottom-color: var(--line);
-      padding: 9px 10px;
+      padding: 6px 8px;
       min-width: 0;
     }
 
@@ -928,8 +928,13 @@
       font-weight: 760;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      padding: 0 10px 6px;
+      padding: 0 8px 5px;
       border-bottom-color: var(--line);
+    }
+
+    .driver.header span:nth-child(2),
+    .driver.header span:nth-child(3) {
+      text-align: right;
     }
 
     .driver:last-child {
@@ -958,30 +963,37 @@
     }
 
     .driver-comment {
-      display: grid;
-      gap: 4px;
-      justify-items: start;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: flex-start;
       min-width: 0;
     }
 
     .driver-comment .tag {
-      white-space: normal;
-      line-height: 1.18;
+      flex: 0 0 auto;
+      white-space: nowrap;
+      line-height: 1.1;
       text-align: center;
+      font-size: 11px;
+      padding: 3px 7px;
       overflow-wrap: anywhere;
     }
 
     .driver-detail {
       color: var(--muted);
-      font-size: 12px;
-      line-height: 1.35;
-      overflow-wrap: anywhere;
+      font-size: 11px;
+      line-height: 1.2;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .driver.proxy-row {
       background: #f8fbfa;
       border-color: #dfe8e4;
-      border-radius: 8px;
+      border-radius: 6px;
     }
 
     .trust-list {
@@ -1129,16 +1141,16 @@
         grid-template-columns: repeat(3, minmax(0, 1fr));
       }
       .driver {
-        grid-template-columns: minmax(150px, 1fr) minmax(76px, auto) minmax(130px, auto);
+        grid-template-columns: minmax(105px, 0.62fr) minmax(54px, 0.24fr) minmax(112px, 0.58fr) minmax(300px, 2.2fr);
       }
       .driver.header {
-        grid-template-columns: minmax(150px, 1fr) minmax(76px, auto) minmax(130px, auto);
+        grid-template-columns: minmax(105px, 0.62fr) minmax(54px, 0.24fr) minmax(112px, 0.58fr) minmax(300px, 2.2fr);
       }
       .driver.header span:nth-child(4) {
-        display: none;
+        display: block;
       }
       .driver-comment {
-        grid-column: 1 / -1;
+        grid-column: auto;
       }
       .factor-grid {
         grid-template-columns: repeat(2, minmax(160px, 1fr));
@@ -1175,6 +1187,13 @@
       .driver {
         grid-template-columns: 1fr;
         align-items: start;
+      }
+      .driver-comment {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .driver-detail {
+        white-space: normal;
       }
       .scenario-list {
         grid-template-columns: 1fr;
@@ -1685,6 +1704,12 @@
       return `${prefix}${parsed.toFixed(decimals)}${suffix}`;
     }
 
+    function compactDate(value) {
+      if (!value) return "";
+      const parts = String(value).split("-");
+      return parts.length === 3 ? `${parts[1]}/${parts[2]}` : String(value);
+    }
+
     function ohlcSummary(row, prefix, unit = "", decimals = 2) {
       const high = Number(row?.[`${prefix}_high`]);
       const low = Number(row?.[`${prefix}_low`]);
@@ -1693,8 +1718,11 @@
       const pricePrefix = unit === "$" ? "$" : "";
       const priceSuffix = unit === "%" ? "%" : "";
       const sourceDate = row?.[`${prefix}_source_date`];
-      const sourceNote = sourceDate && sourceDate !== row?.date ? ` (${sourceDate})` : "";
-      return `L ${formatPrice(low, pricePrefix, priceSuffix, decimals)} / H ${formatPrice(high, pricePrefix, priceSuffix, decimals)} / C ${formatPrice(close, pricePrefix, priceSuffix, decimals)}${sourceNote}`;
+      const sourceNote = sourceDate && sourceDate !== row?.date ? ` @${compactDate(sourceDate)}` : "";
+      const lowText = formatPrice(low, pricePrefix, "", decimals);
+      const highText = formatPrice(high, "", "", decimals);
+      const closeText = formatPrice(close, "", priceSuffix, decimals);
+      return `${lowText}/${highText}/${closeText}${sourceNote}`;
     }
 
     function latestMarketBar(prefix) {
@@ -1706,7 +1734,7 @@
       if (!bar) return "n/a";
       const pricePrefix = unit === "$" ? "$" : "";
       const priceSuffix = unit === "%" ? "%" : "";
-      return `${formatPrice(bar.close, pricePrefix, priceSuffix, decimals)} (${bar.date || "date n/a"})`;
+      return `${formatPrice(bar.close, pricePrefix, priceSuffix, decimals)} ${bar.date ? `@${compactDate(bar.date)}` : ""}`.trim();
     }
 
     function thresholdFlag(name, latest) {
@@ -2266,22 +2294,13 @@
       }
       line(maSlow, palette.orange, 2);
       line(maFast, palette.blue, 2);
-      line(data, palette.ink, hasCandles ? 1.7 : 3);
-
-      const lastIdx = data.map(Number).findLastIndex(Number.isFinite);
-      const lastX = x(lastIdx);
-      const lastY = y(data[lastIdx]);
-      ctx.fillStyle = palette.ink;
-      ctx.beginPath();
-      ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.font = "600 12px Inter, system-ui, sans-serif";
-      ctx.fillText(`${data[lastIdx].toFixed(2)}%`, lastX - 34, lastY - 13);
+      if (!hasCandles) line(data, palette.ink, 3);
 
       const hoverIdx = hoverIndex("yieldChart", rows, pad, w);
       if (hoverIdx != null && Number.isFinite(Number(data[hoverIdx]))) {
         const c = candles[hoverIdx] || {};
-        drawHoverOverlay(ctx, "yieldChart", rows, pad, w, h, x, y(data[hoverIdx]), [
+        const candleAnchor = [c.open, c.high, c.low, c.close].every(Number.isFinite) ? c.close : data[hoverIdx];
+        drawHoverOverlay(ctx, "yieldChart", rows, pad, w, h, x, y(candleAnchor), [
           `FRED 30Y ${Number(data[hoverIdx]).toFixed(2)}%`,
           [c.open, c.high, c.low, c.close].every(Number.isFinite) ? `^TYX O/H/L/C ${c.open.toFixed(2)} / ${c.high.toFixed(2)} / ${c.low.toFixed(2)} / ${c.close.toFixed(2)}%` : null,
           c.sourceDate && c.sourceDate !== rows[hoverIdx]?.date ? `^TYX source ${c.sourceDate}` : null,
@@ -2298,8 +2317,6 @@
       ctx.fillText(state.dashboardData ? "FRED 50d MA" : "fast MA", pad.left + 92, h - 10);
       ctx.fillStyle = palette.orange;
       ctx.fillText(state.dashboardData ? "FRED 200d MA" : "slow MA", pad.left + 190, h - 10);
-      ctx.fillStyle = palette.ink;
-      ctx.fillText("FRED close", pad.left + 300, h - 10);
     }
 
     function drawProbabilityChart() {
