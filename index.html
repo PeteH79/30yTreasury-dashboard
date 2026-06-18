@@ -645,6 +645,7 @@
 
     .change-log {
       display: grid;
+      gap: 8px;
       padding: 14px;
     }
 
@@ -912,11 +913,12 @@
 
     .driver {
       display: grid;
-      grid-template-columns: minmax(150px, 0.8fr) minmax(86px, 0.34fr) minmax(86px, 0.34fr) minmax(260px, 1.25fr);
-      gap: 12px;
-      align-items: start;
-      border-bottom: 1px solid var(--line);
-      padding: 9px 0;
+      grid-template-columns: minmax(145px, 0.85fr) minmax(78px, 0.42fr) minmax(145px, 0.9fr) minmax(260px, 1.35fr);
+      gap: 14px;
+      align-items: center;
+      border: 1px solid transparent;
+      border-bottom-color: var(--line);
+      padding: 9px 10px;
       min-width: 0;
     }
 
@@ -926,7 +928,8 @@
       font-weight: 760;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      padding-top: 0;
+      padding: 0 10px 6px;
+      border-bottom-color: var(--line);
     }
 
     .driver:last-child {
@@ -950,7 +953,8 @@
     .driver-current {
       text-align: right;
       font-weight: 680;
-      white-space: nowrap;
+      line-height: 1.25;
+      overflow-wrap: anywhere;
     }
 
     .driver-comment {
@@ -972,6 +976,12 @@
       font-size: 12px;
       line-height: 1.35;
       overflow-wrap: anywhere;
+    }
+
+    .driver.proxy-row {
+      background: #f8fbfa;
+      border-color: #dfe8e4;
+      border-radius: 8px;
     }
 
     .trust-list {
@@ -1119,10 +1129,10 @@
         grid-template-columns: repeat(3, minmax(0, 1fr));
       }
       .driver {
-        grid-template-columns: minmax(140px, 1fr) minmax(76px, auto) minmax(76px, auto);
+        grid-template-columns: minmax(150px, 1fr) minmax(76px, auto) minmax(130px, auto);
       }
       .driver.header {
-        grid-template-columns: minmax(140px, 1fr) minmax(76px, auto) minmax(76px, auto);
+        grid-template-columns: minmax(150px, 1fr) minmax(76px, auto) minmax(130px, auto);
       }
       .driver.header span:nth-child(4) {
         display: none;
@@ -1653,6 +1663,7 @@
       const pct = key => Number.isFinite(value(key)) ? `${value(key).toFixed(2)}%` : "n/a";
       const num = (key, decimals = 2) => Number.isFinite(value(key)) ? value(key).toFixed(decimals) : "n/a";
       if (name === "30Y nominal yield") return pct("dgs30");
+      if (name === "30Y live proxy") return latestMarketSummary("tyx", "%", 2);
       if (name === "30Y yield proxy range") return ohlcSummary(latest, "tyx", "%", 2);
       if (name === "30Y real yield") return pct("dfii30");
       if (name === "10Y breakevens") return pct("t10yie");
@@ -1683,7 +1694,19 @@
       const priceSuffix = unit === "%" ? "%" : "";
       const sourceDate = row?.[`${prefix}_source_date`];
       const sourceNote = sourceDate && sourceDate !== row?.date ? ` (${sourceDate})` : "";
-      return `${formatPrice(low, pricePrefix, priceSuffix, decimals)}-${formatPrice(high, pricePrefix, priceSuffix, decimals)}; close ${formatPrice(close, pricePrefix, priceSuffix, decimals)}${sourceNote}`;
+      return `L ${formatPrice(low, pricePrefix, priceSuffix, decimals)} / H ${formatPrice(high, pricePrefix, priceSuffix, decimals)} / C ${formatPrice(close, pricePrefix, priceSuffix, decimals)}${sourceNote}`;
+    }
+
+    function latestMarketBar(prefix) {
+      return state.dashboardData?.metadata?.latest_market_bars?.[prefix] || null;
+    }
+
+    function latestMarketSummary(prefix, unit = "", decimals = 2) {
+      const bar = latestMarketBar(prefix);
+      if (!bar) return "n/a";
+      const pricePrefix = unit === "$" ? "$" : "";
+      const priceSuffix = unit === "%" ? "%" : "";
+      return `${formatPrice(bar.close, pricePrefix, priceSuffix, decimals)} (${bar.date || "date n/a"})`;
     }
 
     function thresholdFlag(name, latest) {
@@ -1699,6 +1722,16 @@
         if (yld >= 4.95) return flag("watch", "Near resistance", "Within 5 bp of the 5.00% upside threshold.");
         if (yld <= 4.65) return flag("watch", "Near support", "Within 5 bp of the 4.60% downside threshold.");
         return flag("ok", "Inside range", "Still between the dashboard's 4.60%-5.00% range markers.");
+      }
+
+      if (name === "30Y live proxy") {
+        const bar = latestMarketBar("tyx");
+        const close = Number(bar?.close);
+        if (!Number.isFinite(close)) return flag("gap", "Proxy gap", "Latest Yahoo/CBOE ^TYX quote is unavailable.");
+        if (close >= 5) return flag("pain", "Live break", "Latest ^TYX proxy is at/above 5.00%; confirm against official close when FRED updates.");
+        if (close >= 4.95) return flag("watch", "Near resistance", "Latest ^TYX proxy is within 5 bp of 5.00%.");
+        if (close <= 4.6) return flag("watch", "Support test", "Latest ^TYX proxy is at/below 4.60%.");
+        return flag("ok", "Live proxy", "Latest Yahoo/CBOE ^TYX proxy is below the upside threshold.");
       }
 
       if (name === "30Y yield proxy range") {
@@ -1814,6 +1847,7 @@
       const prior = rows[rows.length - 2];
       return [
         ["30Y nominal yield", bpChange(Number(latest.dgs30), Number(prior.dgs30))],
+        ["30Y live proxy", bpChange(Number(latestMarketBar("tyx")?.close), Number(latest.tyx_close))],
         ["30Y yield proxy range", bpChange(Number(latest.tyx_close), Number(prior.tyx_close))],
         ["30Y real yield", bpChange(Number(latest.dfii30), Number(prior.dfii30))],
         ["10Y breakevens", bpChange(Number(latest.t10yie), Number(prior.t10yie))],
@@ -2136,12 +2170,22 @@
       const h = rect.height;
       const pad = { left: 46, right: 18, top: 20, bottom: 54 };
       const rows = rowsForRange();
-      const data = rows.map(row => Number(row.dgs30)).filter(Number.isFinite);
+      const data = rows.map(row => Number(row.dgs30));
+      const validData = data.filter(Number.isFinite);
+      const candles = rows.map(row => ({
+        open: Number(row.tyx_open),
+        high: Number(row.tyx_high),
+        low: Number(row.tyx_low),
+        close: Number(row.tyx_close),
+        sourceDate: row.tyx_source_date
+      }));
+      const hasCandles = candles.some(c => [c.open, c.high, c.low, c.close].every(Number.isFinite));
+      const candleValues = candles.flatMap(c => [c.open, c.high, c.low, c.close]).filter(Number.isFinite);
       const maFast = rows.some(row => row.ma50) ? rows.map(row => row.ma50 || row.dgs30) : movingAverage(data, Math.max(3, Math.round(data.length / 6)));
       const maSlow = rows.some(row => row.ma200) ? rows.map(row => row.ma200 || row.dgs30) : movingAverage(data, Math.max(5, Math.round(data.length / 3)));
-      const min = Math.min(...data, ...maFast, ...maSlow, 4.55) - 0.08;
-      const max = Math.max(...data, ...maFast, ...maSlow, 5.02) + 0.08;
-      const x = i => pad.left + (i / Math.max(1, data.length - 1)) * (w - pad.left - pad.right);
+      const min = Math.min(...validData, ...candleValues, ...maFast, ...maSlow, 4.55) - 0.08;
+      const max = Math.max(...validData, ...candleValues, ...maFast, ...maSlow, 5.02) + 0.08;
+      const x = i => pad.left + (i / Math.max(1, rows.length - 1)) * (w - pad.left - pad.right);
       const y = v => pad.top + (max - v) / (max - min) * (h - pad.top - pad.bottom);
 
       ctx.clearRect(0, 0, w, h);
@@ -2183,30 +2227,64 @@
         ctx.strokeStyle = color;
         ctx.lineWidth = width;
         ctx.beginPath();
+        let started = false;
         values.forEach((v, i) => {
-          if (i === 0) ctx.moveTo(x(i), y(v));
-          else ctx.lineTo(x(i), y(v));
+          if (!Number.isFinite(Number(v))) return;
+          if (!started) {
+            ctx.moveTo(x(i), y(Number(v)));
+            started = true;
+          } else {
+            ctx.lineTo(x(i), y(Number(v)));
+          }
         });
         ctx.stroke();
       }
 
+      if (hasCandles) {
+        const candleW = clamp((w - pad.left - pad.right) / Math.max(1, rows.length) * 0.62, 2, 8);
+        candles.forEach((c, i) => {
+          if (![c.open, c.high, c.low, c.close].every(Number.isFinite)) return;
+          const xPos = x(i);
+          const up = c.close >= c.open;
+          const color = up ? palette.green : palette.vermilion;
+          const bodyTop = y(Math.max(c.open, c.close));
+          const bodyBottom = y(Math.min(c.open, c.close));
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(xPos, y(c.high));
+          ctx.lineTo(xPos, y(c.low));
+          ctx.stroke();
+          ctx.fillStyle = up ? "rgba(0, 158, 115, 0.72)" : "rgba(213, 94, 0, 0.72)";
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.rect(xPos - candleW / 2, bodyTop, candleW, Math.max(1.5, bodyBottom - bodyTop));
+          ctx.fill();
+          ctx.stroke();
+        });
+      }
       line(maSlow, palette.orange, 2);
       line(maFast, palette.blue, 2);
-      line(data, palette.ink, 3);
+      line(data, palette.ink, hasCandles ? 1.7 : 3);
 
-      const lastX = x(data.length - 1);
-      const lastY = y(data[data.length - 1]);
+      const lastIdx = data.map(Number).findLastIndex(Number.isFinite);
+      const lastX = x(lastIdx);
+      const lastY = y(data[lastIdx]);
       ctx.fillStyle = palette.ink;
       ctx.beginPath();
       ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
       ctx.fill();
       ctx.font = "600 12px Inter, system-ui, sans-serif";
-      ctx.fillText(`${data[data.length - 1].toFixed(2)}%`, lastX - 34, lastY - 13);
+      ctx.fillText(`${data[lastIdx].toFixed(2)}%`, lastX - 34, lastY - 13);
 
       const hoverIdx = hoverIndex("yieldChart", rows, pad, w);
-      if (hoverIdx != null && Number.isFinite(data[hoverIdx])) {
+      if (hoverIdx != null && Number.isFinite(Number(data[hoverIdx]))) {
+        const c = candles[hoverIdx] || {};
         drawHoverOverlay(ctx, "yieldChart", rows, pad, w, h, x, y(data[hoverIdx]), [
-          `30Y ${data[hoverIdx].toFixed(2)}%`,
+          `FRED 30Y ${Number(data[hoverIdx]).toFixed(2)}%`,
+          [c.open, c.high, c.low, c.close].every(Number.isFinite) ? `^TYX O/H/L/C ${c.open.toFixed(2)} / ${c.high.toFixed(2)} / ${c.low.toFixed(2)} / ${c.close.toFixed(2)}%` : null,
+          c.sourceDate && c.sourceDate !== rows[hoverIdx]?.date ? `^TYX source ${c.sourceDate}` : null,
           `50d MA ${Number(maFast[hoverIdx]).toFixed(2)}%`,
           `200d MA ${Number(maSlow[hoverIdx]).toFixed(2)}%`
         ]);
@@ -2215,11 +2293,13 @@
       ctx.fillStyle = "#66736d";
       ctx.font = "12px Inter, system-ui, sans-serif";
       drawDateAxis(ctx, rows, x, h - 31);
-      ctx.fillText("30Y", pad.left, h - 10);
+      ctx.fillText(hasCandles ? "^TYX candles" : "30Y", pad.left, h - 10);
       ctx.fillStyle = palette.blue;
-      ctx.fillText(state.dashboardData ? "50d MA" : "fast MA", pad.left + 42, h - 10);
+      ctx.fillText(state.dashboardData ? "FRED 50d MA" : "fast MA", pad.left + 92, h - 10);
       ctx.fillStyle = palette.orange;
-      ctx.fillText(state.dashboardData ? "200d MA" : "slow MA", pad.left + 104, h - 10);
+      ctx.fillText(state.dashboardData ? "FRED 200d MA" : "slow MA", pad.left + 190, h - 10);
+      ctx.fillStyle = palette.ink;
+      ctx.fillText("FRED close", pad.left + 300, h - 10);
     }
 
     function drawProbabilityChart() {
@@ -2566,7 +2646,7 @@
           <span>Read-through</span>
         </div>
       ` + derivedChanges().map(item => `
-        <div class="driver">
+        <div class="driver ${item.name.includes("proxy") || item.name.includes("futures") || item.name.includes("TLT") ? "proxy-row" : ""}">
           <span class="driver-name">${item.name}</span>
           <span class="driver-value">${item.value}</span>
           <span class="driver-current">${item.current || "n/a"}</span>
