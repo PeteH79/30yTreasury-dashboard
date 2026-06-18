@@ -613,7 +613,7 @@
       width: 100%;
       border-collapse: collapse;
       font-size: 13px;
-      table-layout: fixed;
+      table-layout: auto;
     }
 
     th, td {
@@ -622,6 +622,15 @@
       padding: 11px 12px;
       vertical-align: top;
       overflow-wrap: anywhere;
+    }
+
+    .data-table-wrap {
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    .data-table-wrap table {
+      min-width: 760px;
     }
 
     th {
@@ -753,8 +762,8 @@
 
     .catalyst-row {
       display: grid;
-      grid-template-columns: minmax(92px, 1fr) minmax(72px, 0.8fr) minmax(64px, 0.65fr) minmax(72px, 0.7fr);
-      gap: 9px;
+      grid-template-columns: minmax(112px, 1.15fr) minmax(70px, 0.62fr) minmax(60px, 0.55fr) minmax(92px, 0.85fr);
+      gap: 8px;
       align-items: center;
       border-bottom: 1px solid var(--line);
       border-left: 3px solid transparent;
@@ -811,7 +820,15 @@
     .arrow.flat { background: var(--blue-soft); color: var(--blue); }
 
     .catalyst-name {
+      display: flex;
+      align-items: center;
+      gap: 6px;
       font-weight: 720;
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .catalyst-name-text {
       min-width: 0;
       overflow-wrap: anywhere;
     }
@@ -838,9 +855,10 @@
     }
 
     .catalyst-change {
-      display: inline-flex;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 22px;
       align-items: center;
-      justify-content: flex-end;
+      justify-items: end;
       gap: 6px;
       min-width: 0;
     }
@@ -852,6 +870,7 @@
       font-weight: 760;
       line-height: 1.1;
       white-space: nowrap;
+      flex: 0 0 auto;
     }
 
     .catalyst-signal.near {
@@ -1099,6 +1118,18 @@
       .scenario-list {
         grid-template-columns: repeat(3, minmax(0, 1fr));
       }
+      .driver {
+        grid-template-columns: minmax(140px, 1fr) minmax(76px, auto) minmax(76px, auto);
+      }
+      .driver.header {
+        grid-template-columns: minmax(140px, 1fr) minmax(76px, auto) minmax(76px, auto);
+      }
+      .driver.header span:nth-child(4) {
+        display: none;
+      }
+      .driver-comment {
+        grid-column: 1 / -1;
+      }
       .factor-grid {
         grid-template-columns: repeat(2, minmax(160px, 1fr));
       }
@@ -1139,7 +1170,7 @@
         grid-template-columns: 1fr;
       }
       .catalyst-row {
-        grid-template-columns: minmax(110px, 1fr) minmax(82px, auto);
+        grid-template-columns: minmax(110px, 1fr) minmax(92px, auto);
       }
       .catalyst-row.header {
         display: none;
@@ -2575,8 +2606,8 @@
       const distance = item.threshold === 0 ? Infinity : Math.abs(latestValue - item.threshold) / Math.abs(item.threshold);
       const breached = item.direction === "above" ? latestValue >= item.threshold : latestValue <= item.threshold;
       const near = !breached && distance <= item.nearPct;
-      if (breached) return { rowClass: "breach", labelClass: "breach", label: "through" };
-      if (near) return { rowClass: "near", labelClass: "near", label: "near" };
+      if (breached) return { rowClass: "breach", labelClass: "breach", label: "through level" };
+      if (near) return { rowClass: "near", labelClass: "near", label: "near level" };
       if (largeMove) return { rowClass: "large-move", labelClass: "large", label: "large move" };
       return { rowClass: "", labelClass: "", label: "" };
     }
@@ -2628,13 +2659,15 @@
         const deltaText = delta == null ? "n/a" : `${delta > 0 ? "+" : ""}${formatCatalystValue(delta, item.kind)}`;
         return `
           <div class="catalyst-row ${signal.rowClass}" title="${escapeHtml(`Latest ${formatCatalystValue(latestValue, item.kind)} versus prior 5-period average ${formatCatalystValue(avgValue, item.kind)}; ${pressure}.`)}">
-            <span class="catalyst-name">${item.label}</span>
+            <span class="catalyst-name">
+              <span class="catalyst-name-text">${item.label}</span>
+              ${signal.label ? `<span class="catalyst-signal ${signal.labelClass}">${signal.label}</span>` : ""}
+            </span>
             <span class="catalyst-level">${item.keyLevel}</span>
             <span class="catalyst-last">${formatCatalystValue(latestValue, item.kind)}</span>
             <span class="catalyst-change">
-              ${signal.label ? `<span class="catalyst-signal ${signal.labelClass}">${signal.label}</span>` : ""}
-              <span class="arrow ${direction}">${arrow}</span>
               <span class="catalyst-meta">${deltaText}</span>
+              <span class="arrow ${direction}">${arrow}</span>
             </span>
           </div>
         `;
